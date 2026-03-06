@@ -12,6 +12,9 @@ const props = defineProps({
     default: false
   }
 })
+
+import { useCartStore } from '@/stores/cart'
+const cart = useCartStore()
 </script>
 
 <template>
@@ -56,7 +59,7 @@ const props = defineProps({
               <span v-if="product.compareAtPrice" class="compare-price">{{ product.compareAtPrice }}</span>
               <span class="current-price">{{ product.price }}</span>
             </div>
-            <button class="add-to-cart-btn">Agregar al Carrito</button>
+            <button class="add-to-cart-btn" @click="cart.addToCart(product)">Agregar al Carrito</button>
           </div>
         </div>
       </div>

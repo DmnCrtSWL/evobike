@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue'
+import { useCartStore } from '@/stores/cart'
 
 const props = defineProps({
   isOpen: {
@@ -9,24 +10,10 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close'])
-
-// Mock de ítems en carrito (más adelante conectaremos a un manejador de estado real como Pinia)
-const cartItems = [
-  {
-    id: 1,
-    name: 'Aguila Pro',
-    price: 24990,
-    quantity: 1,
-    image: null
-  }
-]
-
-const subtotal = computed(() => {
-  return cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0)
-})
+const cart = useCartStore()
 
 const formatPrice = (price) => {
-  return `$ ${price.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
+  return `$ ${Number(price).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
 }
 
 const closeCart = () => {
@@ -57,7 +44,7 @@ const closeCart = () => {
 
       <div class="cart-content">
         <!-- Si está vacío -->
-        <div v-if="cartItems.length === 0" class="empty-cart">
+        <div v-if="cart.items.length === 0" class="empty-cart">
           <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
           <p>Tu carrito está vacío</p>
           <button class="btn-continue" @click="closeCart">Continuar comprando</button>
@@ -65,7 +52,7 @@ const closeCart = () => {
 
         <!-- Lista de ítems -->
         <div v-else class="cart-items">
-          <div v-for="item in cartItems" :key="item.id" class="cart-item">
+          <div v-for="item in cart.items" :key="item.id" class="cart-item">
             <div class="item-img-wrapper">
               <img v-if="item.image" :src="item.image" :alt="item.name" class="item-img" />
               <!-- Placeholder img -->
@@ -80,11 +67,11 @@ const closeCart = () => {
               
               <div class="item-controls">
                 <div class="qty-selector">
-                  <button class="qty-btn" aria-label="Disminuir cantidad">-</button>
+                  <button class="qty-btn" aria-label="Disminuir cantidad" @click="cart.updateQuantity(item.id, item.quantity - 1)">-</button>
                   <span class="qty-value">{{ item.quantity }}</span>
-                  <button class="qty-btn" aria-label="Aumentar cantidad">+</button>
+                  <button class="qty-btn" aria-label="Aumentar cantidad" @click="cart.updateQuantity(item.id, item.quantity + 1)">+</button>
                 </div>
-                <button class="remove-btn" aria-label="Eliminar producto">Eliminar</button>
+                <button class="remove-btn" aria-label="Eliminar producto" @click="cart.removeFromCart(item.id)">Eliminar</button>
               </div>
             </div>
           </div>
@@ -92,10 +79,10 @@ const closeCart = () => {
       </div>
 
       <!-- Footer del carrito con totales -->
-      <div v-if="cartItems.length > 0" class="cart-footer">
+      <div v-if="cart.items.length > 0" class="cart-footer">
         <div class="cart-subtotal">
           <span class="subtotal-label">Subtotal</span>
-          <span class="subtotal-amount">{{ formatPrice(subtotal) }}</span>
+          <span class="subtotal-amount">{{ formatPrice(cart.subtotal) }}</span>
         </div>
         <p class="shipping-note">Los impuestos y gastos de envío se calculan en la pantalla de pago.</p>
         <button class="btn-checkout">Proceder al pago</button>
