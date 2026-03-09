@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useCartStore } from '@/stores/cart'
 
 const props = defineProps({
@@ -11,13 +12,24 @@ const props = defineProps({
 
 const emit = defineEmits(['close'])
 const cart = useCartStore()
+const router = useRouter()
 
 const formatPrice = (price) => {
-  return `$ ${Number(price).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
+  const numericPrice = typeof price === 'string' 
+    ? parseFloat(price.replace(/[^\d.-]/g, ''))
+    : Number(price)
+  
+  if (isNaN(numericPrice)) return price
+  return `$ ${numericPrice.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
 }
 
 const closeCart = () => {
   emit('close')
+}
+
+const goToCheckout = () => {
+  closeCart() // Cierra el drawer primero
+  router.push('/checkout')
 }
 </script>
 
@@ -85,7 +97,7 @@ const closeCart = () => {
           <span class="subtotal-amount">{{ formatPrice(cart.subtotal) }}</span>
         </div>
         <p class="shipping-note">Los impuestos y gastos de envío se calculan en la pantalla de pago.</p>
-        <button class="btn-checkout">Proceder al pago</button>
+        <button class="btn-checkout" @click="goToCheckout">Proceder al pago</button>
       </div>
     </div>
   </div>

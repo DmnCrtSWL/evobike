@@ -6,55 +6,55 @@ const menuItems = [
   {
     label: 'Bicicletas Eléctricas',
     children: [
-      { label: 'Aguila Pro', href: 'https://evobikeelite.com/producto/aguila-pro/' },
-      { label: 'Aurora', href: 'https://evobikeelite.com/producto/aurora/' },
-      { label: 'Galaxy Plus', href: 'https://evobikeelite.com/producto/galaxy-plus/' },
-      { label: 'Jaguar', href: 'https://evobikeelite.com/producto/jaguar/' },
-      { label: 'Moped', href: 'https://evobikeelite.com/producto/moped/' },
-      { label: 'Rayo Pro', href: 'https://evobikeelite.com/producto/rayo-pro/' },
-      { label: 'Sol', href: 'https://evobikeelite.com/producto/sol/' },
-      { label: 'Tigre', href: 'https://evobikeelite.com/producto/tigre/' },
+      { label: 'Aguila Pro', to: '/producto/aguila-pro' },
+      { label: 'Aurora', to: '/producto/aurora' },
+      { label: 'Galaxy Plus', to: '/producto/galaxy-plus' },
+      { label: 'Jaguar', to: '/producto/jaguar' },
+      { label: 'Moped', to: '/producto/moped' },
+      { label: 'Rayo Pro', to: '/producto/rayo-pro' },
+      { label: 'Sol', to: '/producto/sol' },
+      { label: 'Tigre', to: '/producto/tigre' },
     ]
   },
   {
     label: 'Bicimotos',
     children: [
-      { label: 'Polar', href: 'https://evobikeelite.com/producto/polar/' },
-      { label: 'Urbex', href: 'https://evobikeelite.com/producto/urbex/' },
-      { label: 'Zeus', href: 'https://evobikeelite.com/producto/zeus/' },
+      { label: 'Polar', to: '/producto/polar' },
+      { label: 'Urbex', to: '/producto/urbex' },
+      { label: 'Zeus', to: '/producto/zeus' },
     ]
   },
   {
     label: 'Triciclos',
     children: [
-      { label: 'Beetle', href: 'https://evobikeelite.com/producto/beetle/' },
-      { label: 'Family Q', href: 'https://evobikeelite.com/producto/family-q/' },
-      { label: 'Family Q Plus', href: 'https://evobikeelite.com/producto/family-q-plus/' },
-      { label: 'Golf', href: 'https://evobikeelite.com/producto/golf/' },
-      { label: 'Golf Plus', href: 'https://evobikeelite.com/producto/golf-plus/' },
+      { label: 'Beetle', to: '/producto/beetle' },
+      { label: 'Family Q', to: '/producto/family-q' },
+      { label: 'Family Q Plus', to: '/producto/family-q-plus' },
+      { label: 'Golf', to: '/producto/golf' },
+      { label: 'Golf Plus', to: '/producto/golf-plus' },
     ]
   },
   {
     label: 'Scooters',
     children: [
-      { label: 'M1', href: 'https://evobikeelite.com/producto/m1/' },
-      { label: 'M4', href: 'https://evobikeelite.com/producto/m4/' },
-      { label: 'M5', href: 'https://evobikeelite.com/producto/m5/' },
+      { label: 'M1', to: '/producto/m1' },
+      { label: 'M4', to: '/producto/m4' },
+      { label: 'M5', to: '/producto/m5' },
     ]
   },
   {
     label: 'Carga',
     children: [
-      { label: 'Cargo', href: 'https://evobikeelite.com/producto/cargo/' },
-      { label: 'Evotank 160 cm', href: 'https://evobikeelite.com/producto/evotank-160-cm/' },
+      { label: 'Cargo', to: '/producto/cargo' },
+      { label: 'Evotank 160 cm', to: '/producto/evotank-160-cm' },
     ]
   },
   {
     label: 'Para Niños',
     children: [
-      { label: 'Ricochet', href: 'https://evobikeelite.com/producto/ricochet/' },
-      { label: 'Python', href: 'https://evobikeelite.com/producto/python/' },
-      { label: 'Evokid', href: 'https://evobikeelite.com/producto/evokid/' },
+      { label: 'Ricochet', to: '/producto/ricochet' },
+      { label: 'Python', to: '/producto/python' },
+      { label: 'Evokid', to: '/producto/evokid' },
     ]
   },
 ]
@@ -93,13 +93,13 @@ function closeMobileMenu() {
           <span>¡Envíos gratuitos a todo México!</span>
         </div>
         <div class="top-col-right">
-          <a href="#" class="social-link" aria-label="Facebook">
+          <a href="https://www.facebook.com/Evobike.Zamora" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="Facebook">
             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
           </a>
-          <a href="#" class="social-link" aria-label="Instagram">
+          <a href="https://www.instagram.com/evobikeelitezamora" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="Instagram">
             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
           </a>
-          <a href="#" class="social-link" aria-label="TikTok">
+          <a href="https://www.tiktok.com/@evobikeelitezamora?_r=1&_t=ZS-93IGEU5SC2v" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="TikTok">
             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/></svg>
           </a>
         </div>
@@ -131,7 +131,7 @@ function closeMobileMenu() {
             </button>
             <ul class="sub-menu">
               <li v-for="child in item.children" :key="child.label">
-                <a :href="child.href" target="_blank" rel="noopener noreferrer">{{ child.label }}</a>
+                <RouterLink :to="child.to" @click="closeMenu">{{ child.label }}</RouterLink>
               </li>
             </ul>
           </li>
@@ -172,7 +172,7 @@ function closeMobileMenu() {
           </button>
           <ul v-if="mobileExpanded === item.label" class="mobile-sub-list">
             <li v-for="child in item.children" :key="child.label">
-              <a :href="child.href" target="_blank" rel="noopener noreferrer" @click="closeMobileMenu">{{ child.label }}</a>
+              <RouterLink :to="child.to" @click="closeMobileMenu">{{ child.label }}</RouterLink>
             </li>
           </ul>
         </li>
@@ -180,13 +180,13 @@ function closeMobileMenu() {
 
       <!-- Redes en el drawer -->
       <div class="drawer-socials">
-        <a href="#" aria-label="Facebook">
+        <a href="https://www.facebook.com/Evobike.Zamora" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
         </a>
-        <a href="#" aria-label="Instagram">
+        <a href="https://www.instagram.com/evobikeelitezamora" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
         </a>
-        <a href="#" aria-label="TikTok">
+        <a href="https://www.tiktok.com/@evobikeelitezamora?_r=1&_t=ZS-93IGEU5SC2v" target="_blank" rel="noopener noreferrer" aria-label="TikTok">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/></svg>
         </a>
       </div>

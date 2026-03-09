@@ -1,4 +1,5 @@
 <script setup>
+import { RouterLink } from 'vue-router'
 const props = defineProps({
   title: String,
   subtitle: String,
@@ -43,7 +44,7 @@ const cart = useCartStore()
       <!-- Real Products -->
       <div v-else class="product-grid">
         <div v-for="(product, index) in products" :key="index" class="product-card">
-          <div class="product-image-wrapper">
+          <RouterLink :to="`/producto/${product.id}`" class="product-image-wrapper" style="display:block; text-decoration:none; color:inherit;">
             <!-- Si el servidor envía la imagen real, la mostramos. Si no, mostramos placeholder -->
             <img v-if="product.image" :src="product.image" :alt="product.name" class="product-real-img" />
             <div v-else class="product-image-placeholder">
@@ -51,13 +52,21 @@ const cart = useCartStore()
             </div>
             
             <div v-if="product.badge" class="product-badge">{{ product.badge }}</div>
-          </div>
+          </RouterLink>
           
           <div class="product-info">
-            <h4 class="product-name">{{ product.name }}</h4>
+            <h4 class="product-name">
+              <RouterLink :to="`/producto/${product.id}`" style="text-decoration:none; color:inherit;">
+                {{ product.name }}
+              </RouterLink>
+            </h4>
             <div class="product-price">
-              <span v-if="product.compareAtPrice" class="compare-price">{{ product.compareAtPrice }}</span>
-              <span class="current-price">{{ product.price }}</span>
+              <span v-if="product.compareAtPriceFormatted || product.compareAtPrice" class="compare-price">
+                {{ product.compareAtPriceFormatted || product.compareAtPrice }}
+              </span>
+              <span class="current-price">
+                {{ product.priceFormatted || product.price }}
+              </span>
             </div>
             <button class="add-to-cart-btn" @click="cart.addToCart(product)">Agregar al Carrito</button>
           </div>

@@ -1,5 +1,12 @@
 <script setup>
-// Componente About Us
+import { RouterLink } from 'vue-router'
+
+defineProps({
+  hideLink: {
+    type: Boolean,
+    default: false
+  }
+})
 </script>
 
 <template>
@@ -42,10 +49,11 @@
             </p>
           </div>
           
-          <div class="about-actions">
+          <div class="about-actions" v-if="!hideLink">
             <!-- Texto discreto en lugar de botón -->
-            <a href="/about" class="btn-text">Conoce más de nosotros <span class="arrow">&rarr;</span></a>
+            <RouterLink to="/nosotros" class="btn-text">Conoce más de nosotros <span class="arrow">&rarr;</span></RouterLink>
           </div>
+
         </div>
         
       </div>
