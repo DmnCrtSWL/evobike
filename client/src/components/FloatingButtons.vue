@@ -1,18 +1,8 @@
 <script setup>
-import { ref } from 'vue'
 import CartDrawer from './CartDrawer.vue'
 import { useCartStore } from '@/stores/cart'
 
-const isCartOpen = ref(false)
 const cart = useCartStore()
-
-const openCart = () => {
-  isCartOpen.value = true
-}
-
-const closeCart = () => {
-  isCartOpen.value = false
-}
 </script>
 
 <template>
@@ -38,7 +28,7 @@ const closeCart = () => {
   </div>
 
   <!-- Botón flotante derecha: Carrito -->
-  <button class="fab-cart" aria-label="Carrito de compras" @click="openCart">
+  <button class="fab-cart" aria-label="Carrito de compras" @click="cart.openCart()">
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="8" cy="21" r="1"/>
       <circle cx="19" cy="21" r="1"/>
@@ -48,7 +38,7 @@ const closeCart = () => {
   </button>
 
   <!-- Drawer (Slide-in) -->
-  <CartDrawer :is-open="isCartOpen" @close="closeCart" />
+  <CartDrawer :is-open="cart.isCartOpen" @close="cart.closeCart()" />
 </template>
 
 <style scoped>

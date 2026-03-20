@@ -6,6 +6,7 @@ export const useCartStore = defineStore('cart', () => {
     // Buscamos si ya hay un carrito guardado en localStorage
     const localCart = localStorage.getItem('evobike-cart')
     const items = ref(localCart ? JSON.parse(localCart) : [])
+    const isCartOpen = ref(false)
 
     // Computados
     const totalItems = computed(() => {
@@ -27,6 +28,14 @@ export const useCartStore = defineStore('cart', () => {
         localStorage.setItem('evobike-cart', JSON.stringify(items.value))
     }
 
+    const openCart = () => {
+        isCartOpen.value = true
+    }
+
+    const closeCart = () => {
+        isCartOpen.value = false
+    }
+
     const addToCart = (product) => {
         // Verificar si el producto ya existe en el carrito
         const existingItem = items.value.find(item => item.id === product.id)
@@ -43,6 +52,7 @@ export const useCartStore = defineStore('cart', () => {
             })
         }
         saveToStorage()
+        openCart()
     }
 
     const removeFromCart = (productId) => {
@@ -71,6 +81,9 @@ export const useCartStore = defineStore('cart', () => {
         items,
         totalItems,
         subtotal,
+        isCartOpen,
+        openCart,
+        closeCart,
         addToCart,
         removeFromCart,
         updateQuantity,
