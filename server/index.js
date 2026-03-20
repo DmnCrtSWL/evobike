@@ -224,7 +224,7 @@ app.get("/api/products/:id", async (req, res) => {
 // Ruta para procesar el pago directamente con Payment Brick
 app.post("/api/process_payment", async (req, res) => {
   try {
-    const paymentData = req.body;
+    const { paymentData, customerInfo, cartItems } = req.body;
     
     const payment = new Payment(client);
     
@@ -243,10 +243,61 @@ app.post("/api/process_payment", async (req, res) => {
       }
     });
 
+    let wcOrderId = null;
+
+    // Si el pago es exitoso o está en proceso, creamos la orden en WooCommerce
+    if (result.status === 'approved' || result.status === 'in_process') {
+      try {
+        const orderPayload = {
+          payment_method: 'mercadopago',
+          payment_method_title: 'Mercado Pago',
+          set_paid: true,
+          billing: {
+            first_name: customerInfo.firstName || '',
+            last_name: customerInfo.lastName || '',
+            address_1: customerInfo.address || '',
+            city: customerInfo.city || '',
+            state: customerInfo.state || '',
+            postcode: customerInfo.postcode || '',
+            country: 'MX',
+            email: customerInfo.email || '',
+            phone: customerInfo.phone || ''
+          },
+          shipping: {
+            first_name: customerInfo.firstName || '',
+            last_name: customerInfo.lastName || '',
+            address_1: customerInfo.address || '',
+            city: customerInfo.city || '',
+            state: customerInfo.state || '',
+            postcode: customerInfo.postcode || '',
+            country: 'MX'
+          },
+          line_items: cartItems.map(item => ({
+            product_id: item.id,
+            quantity: item.quantity
+          }))
+        };
+
+        const wcResponse = await axios.post(`${WC_URL}/wp-json/wc/v3/orders`, orderPayload, {
+          params: {
+            consumer_key: WC_KEY,
+            consumer_secret: WC_SECRET
+          }
+        });
+
+        wcOrderId = wcResponse.data.id;
+        console.log(`Orden creada en WooCommerce con ID: ${wcOrderId}`);
+      } catch (wcError) {
+        console.error("Error al crear la orden en WooCommerce:", wcError.response ? wcError.response.data : wcError.message);
+        // Aun así devolvemos el éxito del pago, pero logueamos el error de WC
+      }
+    }
+
     res.json({
       status: result.status,
       status_detail: result.status_detail,
-      id: result.id
+      id: result.id,
+      wc_order_id: wcOrderId
     });
 
   } catch (error) {

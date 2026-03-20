@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, reactive } from 'vue'
 import { useCartStore } from '@/stores/cart'
 import { useRouter } from 'vue-router'
 
@@ -8,6 +8,18 @@ const isProcessing = ref(false)
 const router = useRouter()
 const mpPublicKey = 'APP_USR-3b174f88-7df2-4b88-ad03-df5619188ee8'
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+
+const customerInfo = reactive({
+  email: '',
+  phone: '',
+  firstName: '',
+  lastName: '',
+  address: '',
+  city: '',
+  postcode: '',
+  state: ''
+})
+
 
 onMounted(() => {
   if (cart.items.length > 0) {
@@ -44,12 +56,22 @@ const initializePaymentBrick = async () => {
           onSubmit: async (cardFormData) => {
             isProcessing.value = true
             try {
+              const payload = {
+                paymentData: cardFormData,
+                customerInfo: customerInfo,
+                cartItems: cart.items.map(item => ({
+                  id: item.id,
+                  quantity: item.quantity,
+                  price: item.price,
+                  name: item.name
+                }))
+              }
               const response = await fetch(`${API_URL}/api/process_payment`, {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
                 },
-                body: JSON.stringify(cardFormData),
+                body: JSON.stringify(payload),
               })
               
               const result = await response.json()
@@ -118,11 +140,11 @@ const formatPrice = (price) => {
             <h3>Información de Contacto</h3>
             <div class="form-group">
               <label>Correo Electrónico</label>
-              <input type="email" placeholder="tu@email.com" class="form-control" />
+              <input type="email" v-model="customerInfo.email" placeholder="tu@email.com" class="form-control" />
             </div>
             <div class="form-group">
               <label>Teléfono</label>
-              <input type="tel" placeholder="123 456 7890" class="form-control" />
+              <input type="tel" v-model="customerInfo.phone" placeholder="123 456 7890" class="form-control" />
             </div>
           </div>
           
@@ -131,30 +153,30 @@ const formatPrice = (price) => {
             <div class="form-row">
               <div class="form-group half">
                 <label>Nombre</label>
-                <input type="text" class="form-control" />
+                <input type="text" v-model="customerInfo.firstName" class="form-control" />
               </div>
               <div class="form-group half">
                 <label>Apellidos</label>
-                <input type="text" class="form-control" />
+                <input type="text" v-model="customerInfo.lastName" class="form-control" />
               </div>
             </div>
             <div class="form-group">
               <label>Calle y Número</label>
-              <input type="text" class="form-control" />
+              <input type="text" v-model="customerInfo.address" class="form-control" />
             </div>
             <div class="form-row">
               <div class="form-group half">
                 <label>Ciudad</label>
-                <input type="text" class="form-control" />
+                <input type="text" v-model="customerInfo.city" class="form-control" />
               </div>
               <div class="form-group half">
                 <label>Código Postal</label>
-                <input type="text" class="form-control" />
+                <input type="text" v-model="customerInfo.postcode" class="form-control" />
               </div>
             </div>
             <div class="form-group">
               <label>Estado</label>
-              <select class="form-control">
+              <select v-model="customerInfo.state" class="form-control">
                 <option value="">Selecciona un Estado</option>
                 <option value="Michoacán">Michoacán</option>
                 <option value="Jalisco">Jalisco</option>
