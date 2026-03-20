@@ -390,11 +390,13 @@ function closeMobileMenu() {
   background: rgba(0,0,0,0.45);
   z-index: 300;
   opacity: 0;
-  transition: opacity 0.3s ease;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
 }
 
 .mobile-overlay.is-visible {
   opacity: 1;
+  visibility: visible;
 }
 
 /* ── Drawer ──────────────────────────────────────────────────────── */
