@@ -41,7 +41,18 @@ const orderTotal = computed(() => {
   return cart.subtotal + shippingCost.value
 })
 
-// Evalúa el CP cada vez que cambia
+const customerInfo = reactive({
+  email: '',
+  phone: '',
+  firstName: '',
+  lastName: '',
+  address: '',
+  city: '',
+  postcode: '',
+  state: ''
+})
+
+// Evalúa el CP cada vez que cambia (debe ir DESPUÉS de customerInfo)
 watch(() => customerInfo.postcode, (cp) => {
   const trimmed = (cp || '').trim()
   if (trimmed === '') {
@@ -57,18 +68,6 @@ watch(() => customerInfo.postcode, (cp) => {
   } else {
     shippingStatus.value = 'paid'
   }
-})
-
-
-const customerInfo = reactive({
-  email: '',
-  phone: '',
-  firstName: '',
-  lastName: '',
-  address: '',
-  city: '',
-  postcode: '',
-  state: ''
 })
 
 
