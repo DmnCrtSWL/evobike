@@ -29,6 +29,21 @@ const router = createRouter({
       name: 'shop',
       component: () => import('../views/ShopView.vue'),
     },
+    {
+      path: '/registro',
+      name: 'registro',
+      component: () => import('../views/RegisterView.vue'),
+    },
+    {
+      path: '/login',
+      name: 'login',
+      component: () => import('../views/LoginView.vue'),
+    },
+    {
+      path: '/cuenta',
+      name: 'cuenta',
+      component: () => import('../views/AccountView.vue'),
+    },
   ],
   scrollBehavior(to, from, savedPosition) {
     if (savedPosition) {

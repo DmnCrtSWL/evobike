@@ -12,8 +12,8 @@ import { RouterLink } from 'vue-router'
         <div class="footer-col">
           <h4 class="footer-title">Horarios</h4>
           <ul class="footer-list">
-            <li>Lunes a Viernes: 8 a 16 Hrs</li>
-            <li>Sábado: de 8 a 14 Hrs</li>
+            <li>Lunes a sábado de 10:00 a 20:00 hrs</li>
+            <li>Domingo de 10:00 a 16:00 hrs</li>
           </ul>
         </div>
         

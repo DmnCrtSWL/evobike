@@ -1,6 +1,17 @@
 <script setup>
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import { ref } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+
+const auth = useAuthStore()
+const router = useRouter()
+const userMenuOpen = ref(false)
+
+function handleLogout() {
+  auth.logout()
+  userMenuOpen.value = false
+  router.push('/')
+}
 
 const menuItems = [
   {
@@ -137,6 +148,29 @@ function closeMobileMenu() {
           </li>
         </ul>
 
+        <!-- Acciones usuario (Desktop) -->
+        <div class="header-actions desktop-menu">
+          <div class="user-menu" @mouseenter="userMenuOpen = true" @mouseleave="userMenuOpen = false">
+            <button class="user-icon-btn" aria-label="Menú de usuario">
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </button>
+            <transition name="fade-down">
+              <ul v-if="userMenuOpen" class="user-dropdown">
+                <template v-if="!auth.isLoggedIn">
+                  <li><RouterLink to="/login" @click="userMenuOpen = false">Iniciar Sesión</RouterLink></li>
+                  <li><RouterLink to="/registro" @click="userMenuOpen = false">Registrarse</RouterLink></li>
+                </template>
+                <template v-else>
+                  <li class="user-name-item">Hola, {{ auth.cliente?.nombre || 'Usuario' }}</li>
+                  <li><RouterLink to="/cuenta" @click="userMenuOpen = false">Mi perfil</RouterLink></li>
+                  <li><RouterLink to="/cuenta" @click="userMenuOpen = false">Mis Pedidos</RouterLink></li>
+                  <li><button @click="handleLogout" class="dropdown-logout-btn">Cerrar sesión</button></li>
+                </template>
+              </ul>
+            </transition>
+          </div>
+        </div>
+
         <!-- Hamburger (solo móvil) -->
         <button class="hamburger" :class="{ 'is-active': mobileOpen }" @click="toggleMobile" aria-label="Abrir menú">
           <span></span>
@@ -177,6 +211,20 @@ function closeMobileMenu() {
           </ul>
         </li>
       </ul>
+
+      <!-- User Auth Mobile -->
+      <div class="drawer-auth">
+        <template v-if="!auth.isLoggedIn">
+          <RouterLink to="/registro" class="drawer-auth-btn main" @click="closeMobileMenu">Registrarse</RouterLink>
+          <RouterLink to="/login" class="drawer-auth-btn secondary" @click="closeMobileMenu">Iniciar sesión</RouterLink>
+        </template>
+        <template v-else>
+          <p class="drawer-auth-user">Hola, {{ auth.cliente?.nombre || 'Usuario' }}</p>
+          <RouterLink to="/cuenta" class="drawer-auth-btn" @click="closeMobileMenu">Mi perfil</RouterLink>
+          <RouterLink to="/cuenta" class="drawer-auth-btn" @click="closeMobileMenu">Mis Pedidos</RouterLink>
+          <button @click="handleLogout" class="drawer-auth-btn logout">Cerrar sesión</button>
+        </template>
+      </div>
 
       <!-- Redes en el drawer -->
       <div class="drawer-socials">
@@ -511,6 +559,164 @@ function closeMobileMenu() {
 
 .drawer-socials a:hover { color: #09AC22; }
 
+/* ── Responsive breakpoints ──────────────────────────────────────── 
+   Movido al final del archivo para asegurar precedencia
+*/
+
+/* ── Acciones Usuario ─────────────────────────────────────────────── */
+.header-actions {
+  display: flex;
+  align-items: center;
+  margin-left: 1rem;
+}
+
+.user-menu {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.user-icon-btn {
+  background: none;
+  border: none;
+  padding: 0.5rem;
+  cursor: pointer;
+  color: #1a1a1a;
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-icon-btn:hover {
+  color: #09AC22;
+}
+
+.user-dropdown {
+  position: absolute;
+  top: 100%;
+  right: -10px;
+  background: #ffffff;
+  border-top: 3px solid #09AC22;
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 8px 24px -4px rgba(0,0,0,0.14);
+  list-style: none;
+  margin: 0;
+  padding: 0.5rem 0;
+  min-width: 180px;
+  z-index: 200;
+}
+
+.user-dropdown li a, 
+.dropdown-logout-btn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.6rem 1.25rem;
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: #333;
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 0.15s, background-color 0.15s;
+}
+
+.user-name-item {
+  padding: 0.6rem 1.25rem 0.3rem;
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.8rem;
+  color: #6b7280;
+  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 0.3rem;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.user-dropdown li a:hover,
+.dropdown-logout-btn:hover {
+  color: #09AC22;
+  background-color: #f4fdf5;
+}
+
+.dropdown-logout-btn {
+  color: #dc2626;
+}
+.dropdown-logout-btn:hover {
+  color: #b91c1c;
+  background-color: #fef2f2;
+}
+
+.fade-down-enter-active,
+.fade-down-leave-active {
+  transition: opacity 0.2s, transform 0.2s;
+}
+.fade-down-enter-from,
+.fade-down-leave-to {
+  opacity: 0;
+  transform: translateY(-5px);
+}
+
+/* ── Mobile Drawer Auth ───────────────────────────────────────────── */
+.drawer-auth {
+  display: flex;
+  flex-direction: column;
+  padding: 1.25rem;
+  border-top: 1px solid #ebebeb;
+  background-color: #fafbfc;
+}
+
+.drawer-auth-btn {
+  text-decoration: none;
+  font-family: 'Poppins', sans-serif;
+  color: #1a1a1a;
+  padding: 0.4rem 0;
+  transition: color 0.2s;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 500;
+  display: inline-block;
+}
+
+.drawer-auth-btn.main {
+  font-size: 1.1rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #1a1a1a;
+}
+
+.drawer-auth-btn.secondary {
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: #666;
+  margin-top: -0.2rem;
+}
+
+.drawer-auth-btn:hover {
+  color: #09AC22;
+}
+
+.drawer-auth-user {
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+}
+
+.drawer-auth-btn.logout {
+  color: #dc2626;
+  margin-top: 0.5rem;
+}
+.drawer-auth-btn.logout:hover {
+  color: #b91c1c;
+}
+
 /* ── Responsive breakpoints ──────────────────────────────────────── */
 @media (max-width: 768px) {
   /* Top bar: ocultar dirección */
@@ -523,8 +729,9 @@ function closeMobileMenu() {
 
   .top-col-left svg { display: none; } /* si el texto está oculto el ícono también */
 
-  /* Ocultar menú desktop, mostrar hamburger */
-  .desktop-menu { display: none; }
+  /* Ocultar menú desktop (.header-actions incluido), mostrar hamburger */
+  .desktop-menu { display: none !important; }
+  
   .hamburger { display: flex; }
 
   /* Overlay visible */

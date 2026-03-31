@@ -2,6 +2,9 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const axios = require("axios");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const { Pool } = require("pg");
 const { MercadoPagoConfig, Payment } = require("mercadopago");
 
 const app = express();
@@ -11,6 +14,25 @@ app.use(express.json());
 const WC_URL = process.env.VITE_WC_URL || "https://tu-tienda.com";
 const WC_KEY = process.env.VITE_WC_CONSUMER_KEY || "";
 const WC_SECRET = process.env.VITE_WC_CONSUMER_SECRET || "";
+const JWT_SECRET = process.env.JWT_SECRET || "evobike_secret_2024";
+
+// Conexión a Neon PostgreSQL
+const db = new Pool({
+  connectionString: process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_VGpZrwP70vJk@ep-shy-lab-amyh5564-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require',
+  ssl: { rejectUnauthorized: false }
+});
+
+// Middleware para verificar JWT
+const authMiddleware = (req, res, next) => {
+  const auth = req.headers.authorization;
+  if (!auth || !auth.startsWith('Bearer ')) return res.status(401).json({ error: 'No autorizado' });
+  try {
+    req.cliente = jwt.verify(auth.split(' ')[1], JWT_SECRET);
+    next();
+  } catch {
+    res.status(401).json({ error: 'Token inválido o expirado' });
+  }
+};
 
 // Configurar Mercado Pago
 const client = new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN || "TEST" });
@@ -397,6 +419,124 @@ app.post("/api/process_payment", async (req, res) => {
   } catch (error) {
     console.error("Error processing MP payment:", error);
     res.status(500).json({ error: "No se pudo procesar el pago" });
+  }
+});
+
+// ─────────────────────────────────────────────
+// MÓDULO DE CLIENTES
+// ─────────────────────────────────────────────
+
+// POST /api/clientes/registro
+app.post("/api/clientes/registro", async (req, res) => {
+  const { nombre, apellido, email, password, telefono } = req.body;
+  if (!nombre || !email || !password) return res.status(400).json({ error: "Nombre, email y contraseña son requeridos" });
+
+  try {
+    const existe = await db.query("SELECT id FROM clientes WHERE email = $1", [email.toLowerCase()]);
+    if (existe.rows.length > 0) return res.status(409).json({ error: "El email ya está registrado" });
+
+    const hash = await bcrypt.hash(password, 12);
+    const result = await db.query(
+      "INSERT INTO clientes (nombre, apellido, email, password, telefono) VALUES ($1, $2, $3, $4, $5) RETURNING id, nombre, apellido, email, telefono, created_at",
+      [nombre, apellido || null, email.toLowerCase(), hash, telefono || null]
+    );
+    const cliente = result.rows[0];
+    const token = jwt.sign({ id: cliente.id, email: cliente.email }, JWT_SECRET, { expiresIn: "30d" });
+    res.status(201).json({ token, cliente });
+  } catch (err) {
+    console.error("Error en registro:", err.message);
+    res.status(500).json({ error: "Error al registrar cliente" });
+  }
+});
+
+// POST /api/clientes/login
+app.post("/api/clientes/login", async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) return res.status(400).json({ error: "Email y contraseña son requeridos" });
+
+  try {
+    const result = await db.query("SELECT * FROM clientes WHERE email = $1", [email.toLowerCase()]);
+    if (result.rows.length === 0) return res.status(401).json({ error: "Credenciales incorrectas" });
+
+    const cliente = result.rows[0];
+    const valido = await bcrypt.compare(password, cliente.password);
+    if (!valido) return res.status(401).json({ error: "Credenciales incorrectas" });
+
+    const token = jwt.sign({ id: cliente.id, email: cliente.email }, JWT_SECRET, { expiresIn: "30d" });
+    const { password: _, ...clienteSinPassword } = cliente;
+    res.json({ token, cliente: clienteSinPassword });
+  } catch (err) {
+    console.error("Error en login:", err.message);
+    res.status(500).json({ error: "Error al iniciar sesión" });
+  }
+});
+
+// GET /api/clientes/perfil (protegido)
+app.get("/api/clientes/perfil", authMiddleware, async (req, res) => {
+  try {
+    const result = await db.query(
+      "SELECT id, nombre, apellido, email, telefono, created_at FROM clientes WHERE id = $1",
+      [req.cliente.id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: "Cliente no encontrado" });
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("Error en perfil:", err.message);
+    res.status(500).json({ error: "Error al obtener perfil" });
+  }
+});
+
+// PUT /api/clientes/perfil (protegido)
+app.put("/api/clientes/perfil", authMiddleware, async (req, res) => {
+  const { nombre, apellido, telefono } = req.body;
+  try {
+    const result = await db.query(
+      "UPDATE clientes SET nombre=$1, apellido=$2, telefono=$3, updated_at=NOW() WHERE id=$4 RETURNING id, nombre, apellido, email, telefono",
+      [nombre, apellido || null, telefono || null, req.cliente.id]
+    );
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("Error actualizando perfil:", err.message);
+    res.status(500).json({ error: "Error al actualizar perfil" });
+  }
+});
+
+// GET /api/clientes/pedidos (protegido) — consulta WooCommerce por email
+app.get("/api/clientes/pedidos", authMiddleware, async (req, res) => {
+  try {
+    // Obtener email del cliente desde Postgres
+    const result = await db.query("SELECT email FROM clientes WHERE id = $1", [req.cliente.id]);
+    if (result.rows.length === 0) return res.status(404).json({ error: "Cliente no encontrado" });
+
+    const email = result.rows[0].email;
+
+    const response = await axios.get(`${WC_URL}/wp-json/wc/v3/orders`, {
+      params: {
+        billing_email: email,
+        per_page: 20,
+        orderby: "date",
+        order: "desc",
+        consumer_key: WC_KEY,
+        consumer_secret: WC_SECRET,
+      },
+    });
+
+    if (!Array.isArray(response.data)) return res.json([]);
+
+    const pedidos = response.data.map(p => ({
+      id: p.id,
+      numero: p.number,
+      fecha: p.date_created,
+      estado: p.status,
+      total: `$ ${parseFloat(p.total).toLocaleString("es-MX", { minimumFractionDigits: 2 })}`,
+      productos: p.line_items.map(i => ({ nombre: i.name, cantidad: i.quantity, subtotal: i.subtotal })),
+    }));
+
+    res.json(pedidos);
+  } catch (err) {
+    console.error("Error obteniendo pedidos:", err.message);
+    // Si WooCommerce falla, devolvemos vacío (no queremos romper el dashboard)
+    res.json([]);
   }
 });
 
