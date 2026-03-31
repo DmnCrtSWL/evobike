@@ -529,7 +529,15 @@ app.get("/api/clientes/pedidos", authMiddleware, async (req, res) => {
       fecha: p.date_created,
       estado: p.status,
       total: `$ ${parseFloat(p.total).toLocaleString("es-MX", { minimumFractionDigits: 2 })}`,
-      productos: p.line_items.map(i => ({ nombre: i.name, cantidad: i.quantity, subtotal: i.subtotal })),
+      envio: `$ ${parseFloat(p.shipping_total || 0).toLocaleString("es-MX", { minimumFractionDigits: 2 })}`,
+      direccion_envio: p.shipping && p.shipping.address_1 
+        ? `${p.shipping.address_1}, ${p.shipping.city}, ${p.shipping.state}`
+        : (p.billing && p.billing.address_1 ? `${p.billing.address_1}, ${p.billing.city}, ${p.billing.state}` : 'No especificada'),
+      productos: p.line_items.map(i => ({ 
+        nombre: i.name, 
+        cantidad: i.quantity, 
+        subtotal: `$ ${parseFloat(i.subtotal || 0).toLocaleString("es-MX", { minimumFractionDigits: 2 })}` 
+      })),
     }));
 
     res.json(pedidos);

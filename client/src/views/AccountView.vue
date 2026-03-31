@@ -10,6 +10,16 @@ const pedidos = ref([])
 const loadingPedidos = ref(true)
 const tab = ref('pedidos') // 'pedidos' | 'perfil'
 
+const selectedPedido = ref(null)
+
+function abrirDetalles(pedido) {
+  selectedPedido.value = pedido
+}
+
+function cerrarDetalles() {
+  selectedPedido.value = null
+}
+
 // Estado del mapa de estados WooCommerce
 const estadoLabel = {
   pending: 'Pendiente',
@@ -108,7 +118,46 @@ function formatFecha(fecha) {
             </div>
 
             <div class="order-footer">
+              <button class="details-link" @click="abrirDetalles(pedido)">Ver Detalles</button>
               <span class="order-total">Total: <strong>{{ pedido.total }}</strong></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal de Detalles del Pedido -->
+      <div v-if="selectedPedido" class="modal-overlay" @click.self="cerrarDetalles">
+        <div class="modal-content">
+          <button class="modal-close" @click="cerrarDetalles">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+          
+          <h2>Detalles del Pedido #{{ selectedPedido.numero }}</h2>
+          <p class="modal-date">{{ formatFecha(selectedPedido.fecha) }}</p>
+
+          <div class="modal-section">
+            <h3>Dirección de entrega</h3>
+            <p>{{ selectedPedido.direccion_envio }}</p>
+          </div>
+
+          <div class="modal-section">
+            <h3>Productos</h3>
+            <ul class="modal-products">
+              <li v-for="item in selectedPedido.productos" :key="item.nombre">
+                <span class="product-name">{{ item.cantidad }}x {{ item.nombre }}</span>
+                <span class="product-price">{{ item.subtotal }}</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="modal-summary">
+            <div class="summary-line">
+              <span>Costo de envío</span>
+              <span>{{ selectedPedido.envio }}</span>
+            </div>
+            <div class="summary-line total">
+              <span>Total pagado</span>
+              <span>{{ selectedPedido.total }}</span>
             </div>
           </div>
         </div>
@@ -326,11 +375,29 @@ function formatFecha(fecha) {
 .item-qty { color: #9ca3af; }
 
 .order-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   padding: 0.75rem 1.25rem;
   border-top: 1px solid #f3f4f6;
-  text-align: right;
   font-size: 0.95rem;
   color: #374151;
+}
+
+.details-link {
+  background: none;
+  border: none;
+  color: #0a6837;
+  font-weight: 600;
+  font-family: 'Poppins', sans-serif;
+  cursor: pointer;
+  font-size: 0.85rem;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.details-link:hover {
+  color: #16a34a;
 }
 
 /* Perfil */
@@ -356,6 +423,124 @@ function formatFecha(fecha) {
   color: #111827;
   font-weight: 500;
   margin: 0;
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 500px;
+  padding: 2rem;
+  position: relative;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+.modal-close {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #6b7280;
+  transition: color 0.2s;
+}
+
+.modal-close:hover {
+  color: #111827;
+}
+
+.modal-content h2 {
+  font-family: 'Poppins', sans-serif;
+  margin: 0 0 0.25rem 0;
+  font-size: 1.35rem;
+  color: #111827;
+}
+
+.modal-date {
+  color: #6b7280;
+  margin: 0 0 1.5rem 0;
+  font-size: 0.9rem;
+}
+
+.modal-section {
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid #f3f4f6;
+  padding-bottom: 1.5rem;
+}
+
+.modal-section h3 {
+  font-family: 'Poppins', sans-serif;
+  font-size: 1rem;
+  color: #111827;
+  margin: 0 0 0.75rem 0;
+}
+
+.modal-section p {
+  color: #4b5563;
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.modal-products {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.modal-products li {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+  color: #374151;
+}
+
+.product-name {
+  flex: 1;
+  padding-right: 1rem;
+}
+
+.product-price {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.modal-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.summary-line {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.95rem;
+  color: #4b5563;
+}
+
+.summary-line.total {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #111827;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 0.75rem;
+  margin-top: 0.25rem;
 }
 
 @media (max-width: 600px) {
