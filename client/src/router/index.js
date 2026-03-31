@@ -24,6 +24,11 @@ const router = createRouter({
       name: 'checkout',
       component: () => import('../views/CheckoutView.vue'),
     },
+    {
+      path: '/shop',
+      name: 'shop',
+      component: () => import('../views/ShopView.vue'),
+    },
   ],
   scrollBehavior(to, from, savedPosition) {
     if (savedPosition) {

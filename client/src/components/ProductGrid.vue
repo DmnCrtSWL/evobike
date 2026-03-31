@@ -26,7 +26,7 @@ const cart = useCartStore()
           <h2 class="subtitle">{{ subtitle }}</h2>
           <h3 class="title">{{ title }}</h3>
         </div>
-        <a v-if="viewAllLink" :href="viewAllLink" class="view-all">Ver todo <span class="arrow">&rarr;</span></a>
+        <RouterLink v-if="viewAllLink" :to="viewAllLink" class="view-all">Ver todo <span class="arrow">&rarr;</span></RouterLink>
       </div>
 
       <!-- Skeleton Loading State -->
@@ -71,6 +71,10 @@ const cart = useCartStore()
             <button class="add-to-cart-btn" @click="cart.addToCart(product)">Agregar al Carrito</button>
           </div>
         </div>
+      </div>
+      
+      <div v-if="viewAllLink" class="view-all-wrapper">
+        <RouterLink :to="viewAllLink" class="view-all-btn">Ver todos los productos</RouterLink>
       </div>
     </div>
   </section>
@@ -353,5 +357,31 @@ const cart = useCartStore()
     background-color: var(--color-brand, #0a6837);
     color: #ffffff;
   }
+}
+
+/* ── Botón Ver Todos Abajo ── */
+.view-all-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-top: 3rem;
+}
+
+.view-all-btn {
+  background-color: var(--color-brand, #0a6837);
+  color: #fff;
+  padding: 1rem 3rem;
+  border-radius: 50px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: 1.1rem;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(10, 104, 55, 0.2);
+}
+
+.view-all-btn:hover {
+  background-color: #08502b;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(10, 104, 55, 0.3);
 }
 </style>

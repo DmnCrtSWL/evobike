@@ -137,6 +137,100 @@ app.get("/api/products/random", async (req, res) => {
   }
 });
 
+app.get("/api/categories", async (req, res) => {
+  try {
+    const response = await axios.get(`${WC_URL}/wp-json/wc/v3/products/categories`, {
+      params: {
+        consumer_key: WC_KEY,
+        consumer_secret: WC_SECRET,
+        per_page: 100,
+        hide_empty: true
+      },
+    });
+    res.json(response.data);
+  } catch (error) {
+    console.error("Error fetching categories:", error.message);
+    res.status(500).json({ error: "Error connecting to WooCommerce categories" });
+  }
+});
+
+app.get("/api/products", async (req, res) => {
+  try {
+    const { category, min_price, max_price, attribute, attribute_term, search } = req.query;
+    
+    let params = {
+      per_page: 100,
+      status: "publish",
+      consumer_key: WC_KEY,
+      consumer_secret: WC_SECRET,
+    };
+
+    if (category) params.category = category;
+    if (min_price) params.min_price = min_price;
+    if (max_price) params.max_price = max_price;
+    if (search) params.search = search;
+    if (attribute && attribute_term) {
+      params.attribute = attribute;
+      params.attribute_term = attribute_term;
+    }
+
+    const response = await axios.get(`${WC_URL}/wp-json/wc/v3/products`, { params });
+
+    if (!Array.isArray(response.data)) {
+      return res.status(502).json({ error: "Respuesta inesperada", detail: response.data });
+    }
+
+    const mappedProducts = response.data.map((product) => {
+      let primaryImage = null;
+      if (product.images && product.images.length > 0) primaryImage = product.images[0].src;
+      const currentPriceNum = product.price ? parseFloat(product.price) : 0;
+      const regularPriceNum = product.regular_price ? parseFloat(product.regular_price) : 0;
+      const currentPriceFormatted = product.price ? `$ ${currentPriceNum.toLocaleString("es-MX", { minimumFractionDigits: 2 })}` : "";
+      const regularPriceFormatted = product.regular_price ? `$ ${regularPriceNum.toLocaleString("es-MX", { minimumFractionDigits: 2 })}` : "";
+
+      return {
+        id: product.id,
+        name: product.name,
+        permalink: product.permalink,
+        price: currentPriceNum,
+        priceFormatted: currentPriceFormatted,
+        compareAtPriceFormatted: currentPriceNum !== regularPriceNum && regularPriceNum > 0 ? regularPriceFormatted : null,
+        image: primaryImage,
+        badge: product.on_sale ? "Oferta" : product.featured ? "Destacado" : "",
+        categories: product.categories || [],
+        attributes: product.attributes || []
+      };
+    });
+
+    res.json(mappedProducts);
+  } catch (error) {
+    console.error("Error fetching all products:", error.message);
+    res.status(500).json({ error: "Error conectando a WooCommerce" });
+  }
+});
+
+app.get("/api/attributes/colors", async (req, res) => {
+  try {
+    const attrsResponse = await axios.get(`${WC_URL}/wp-json/wc/v3/products/attributes`, {
+        params: { consumer_key: WC_KEY, consumer_secret: WC_SECRET }
+    });
+    
+    const colorAttr = attrsResponse.data.find(a => a.name.toLowerCase() === 'color' || a.slug === 'pa_color' || a.slug === 'color');
+    
+    if (colorAttr) {
+        const termsResponse = await axios.get(`${WC_URL}/wp-json/wc/v3/products/attributes/${colorAttr.id}/terms`, {
+             params: { consumer_key: WC_KEY, consumer_secret: WC_SECRET, per_page: 100 }
+        });
+        res.json({ attributeId: colorAttr.id, attributeSlug: colorAttr.slug, terms: termsResponse.data });
+    } else {
+        res.json({ terms: [] });
+    }
+  } catch(error) {
+      console.error("Error fetching colors:", error.message);
+      res.json({ terms: [] });
+  }
+});
+
 app.get("/api/products/:id", async (req, res) => {
   try {
     const { id } = req.params;
