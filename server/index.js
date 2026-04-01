@@ -16,6 +16,30 @@ const WC_KEY = process.env.VITE_WC_CONSUMER_KEY || "";
 const WC_SECRET = process.env.VITE_WC_CONSUMER_SECRET || "";
 const JWT_SECRET = process.env.JWT_SECRET || "evobike_secret_2024";
 
+// Endpoint Proxy de Imágenes para evitar bloqueos por CORS o SSL de Plesk
+app.get("/api/image-proxy", async (req, res) => {
+  try {
+    const imageUrl = req.query.url;
+    if (!imageUrl) return res.status(400).send("URL required");
+    
+    const response = await axios({
+      method: "GET",
+      url: imageUrl,
+      responseType: "stream",
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+      }
+    });
+
+    res.set("Content-Type", response.headers["content-type"]);
+    res.set("Cache-Control", "public, max-age=86400");
+    response.data.pipe(res);
+  } catch (error) {
+    console.error("Image proxy error:", error.message);
+    res.status(500).send("Proxy error");
+  }
+});
+
 // Conexión a Neon PostgreSQL
 const db = new Pool({
   connectionString: process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_VGpZrwP70vJk@ep-shy-lab-amyh5564-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require',
@@ -81,6 +105,8 @@ app.get("/api/products/bestsellers", async (req, res) => {
         id: product.id,
         name: product.name,
         permalink: product.permalink, // Link al producto
+        // Para proxy
+        imageOriginal: primaryImage,
         // Para cálculos numéricos en el carrito
         price: currentPriceNum,
         // Para mostrar strings bonitos en la UI
@@ -89,7 +115,7 @@ app.get("/api/products/bestsellers", async (req, res) => {
           currentPriceNum !== regularPriceNum && regularPriceNum > 0
             ? regularPriceFormatted
             : null,
-        image: primaryImage,
+        image: primaryImage ? "/api/image-proxy?url=" + encodeURIComponent(primaryImage) : null,
         // Lógica de "badge" (Popular, Oferta, etc.) se puede sacar de etiquetas o estado "on_sale"
         badge: product.on_sale ? "Oferta" : product.featured ? "Destacado" : "",
       };
@@ -144,10 +170,11 @@ app.get("/api/products/random", async (req, res) => {
         id: product.id,
         name: product.name,
         permalink: product.permalink,
+        imageOriginal: primaryImage,
         price: currentPriceNum,
         priceFormatted: currentPriceFormatted,
         compareAtPriceFormatted: currentPriceNum !== regularPriceNum && regularPriceNum > 0 ? regularPriceFormatted : null,
-        image: primaryImage,
+        image: primaryImage ? "/api/image-proxy?url=" + encodeURIComponent(primaryImage) : null,
         badge: product.on_sale ? "Oferta" : product.featured ? "Destacado" : "",
       };
     });
@@ -217,7 +244,7 @@ app.get("/api/products", async (req, res) => {
         price: currentPriceNum,
         priceFormatted: currentPriceFormatted,
         compareAtPriceFormatted: currentPriceNum !== regularPriceNum && regularPriceNum > 0 ? regularPriceFormatted : null,
-        image: primaryImage,
+        image: primaryImage ? "/api/image-proxy?url=" + encodeURIComponent(primaryImage) : null,
         badge: product.on_sale ? "Oferta" : product.featured ? "Destacado" : "",
         categories: product.categories || [],
         attributes: product.attributes || []
@@ -322,6 +349,7 @@ app.get("/api/products/:id", async (req, res) => {
     res.json({
       id: product.id,
       name: product.name,
+      imageOriginal: primaryImage,
       description: product.description ? product.description.replace(/(<([^>]+)>)/gi, "") : 'Sin descripción', // strip basic HTML
       shortDescription: product.short_description ? product.short_description.replace(/(<([^>]+)>)/gi, "") : '',
       price: currentPriceNum,
