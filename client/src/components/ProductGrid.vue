@@ -46,7 +46,7 @@ const cart = useCartStore()
         <div v-for="(product, index) in products" :key="index" class="product-card">
           <RouterLink :to="`/producto/${product.id}`" class="product-image-wrapper" style="display:block; text-decoration:none; color:inherit;">
             <!-- Si el servidor envía la imagen real, la mostramos. Si no, mostramos placeholder -->
-            <img v-if="product.image" :src="product.image" :alt="product.name" class="product-real-img" />
+            <img v-if="product.image" :src="product.image" :alt="product.name" class="product-real-img" referrerpolicy="no-referrer" />
             <div v-else class="product-image-placeholder">
               <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
             </div>
