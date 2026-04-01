@@ -30,6 +30,15 @@ const fetchProduct = async (id) => {
     if (!mainImage.value && product.value.images && product.value.images.length > 0) {
       mainImage.value = product.value.images[0].src
     }
+
+    // Seleccionar primer color y primer voltaje por defecto si existen
+    if (product.value.attributes) {
+      product.value.attributes.forEach(attr => {
+        if (attr.options && attr.options.length > 0) {
+          selectAttribute(attr.name, attr.options[0])
+        }
+      })
+    }
     
     quantity.value = 1
     fetchRecommended()
@@ -77,21 +86,24 @@ const selectedAttributes = ref({})
 const selectAttribute = (attrName, option) => {
   selectedAttributes.value[attrName] = option
 
-  // Buscar si hay una variación que coincida con los atributos seleccionados
+  // Buscar si hay una variación que coincida con lo que acabamos de seleccionar
+  // Para el cambio de imagen, priorizamos el match de COLOR
   if (product.value && product.value.variations && product.value.variations.length > 0) {
+    const searchOpt = String(option).trim().toLowerCase()
+    
+    // Buscamos una variación que tenga este atributo específico
     const matchedVariation = product.value.variations.find(v => {
-      // Checar que todas las llaves seleccionadas hagan match
-      return Object.keys(selectedAttributes.value).every(key => {
-        const selectedVal = selectedAttributes.value[key]
-        // v.attributes es de la forma: { id: 1, name: 'Color', option: 'Rojo/Verde' }
-        // Se hace case-insensitive comparison por si WooCommerce lo manda diferente
-        const vAttr = v.attributes.find(a => a.name.toLowerCase() === key.toLowerCase())
-        return vAttr && vAttr.option === selectedVal
-      })
+      return v.attributes.some(a => 
+        a.name.toLowerCase() === attrName.toLowerCase() && 
+        String(a.option).trim().toLowerCase() === searchOpt
+      )
     })
 
     if (matchedVariation && matchedVariation.image) {
       mainImage.value = matchedVariation.image
+    } else {
+      // Si la variación no tiene foto específica, volvemos a la principal
+      mainImage.value = product.value.image
     }
   }
 }
@@ -111,7 +123,12 @@ const getColorMap = (colorName) => {
     'rosa': '#ec4899',
     'morado': '#a855f7',
     'cafe': '#713f12',
-    'celeste': '#38bdf8'
+    'celeste': '#38bdf8',
+    'dorado': '#dbb018',
+    'tornasol': 'linear-gradient(45deg, #ff00ff, #00ffff)',
+    'fucsia': '#ff00ff',
+    'menta': '#a7f3d0',
+    'vino': '#722f37'
   }
   
   // Limpiamos el texto
@@ -249,9 +266,15 @@ const handleAddToCart = () => {
             </button>
           </div>
           
+          <!-- Aviso de Pagos y Seguridad -->
+          <div class="payment-notice">
+            <p>Aceptamos <strong>tarjetas de crédito y débito</strong> y <strong>transferencias bancarias</strong>.</p>
+            <p><strong>Todos los pedidos están sujetos a validación de identidad</strong> (el nombre del titular de la tarjeta debe coincidir con el nombre registrado en el pedido), podrán ser <strong>cancelados y reembolsados</strong> si no se completa el proceso de verificación.</p>
+            <p class="delivery-disclaimer">*Será necesario presentar una identificación oficial al momento de la entrega.</p>
+          </div>
+          
           <!-- Beneficios extra -->
           <ul class="product-features">
-            <li><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5l10 -10"/></svg> Envío gratis a todo México</li>
             <li><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5l10 -10"/></svg> Garantía de ensamblaje</li>
             <li><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5l10 -10"/></svg> Soporte técnico 24/7</li>
           </ul>
@@ -589,6 +612,35 @@ const handleAddToCart = () => {
 
 .add-to-cart-btn:active {
   transform: translateY(0);
+}
+
+/* ── AVISO DE PAGO ── */
+.payment-notice {
+  margin-top: 2rem;
+  margin-bottom: 2.5rem;
+  padding: 1.25rem 1.5rem;
+  background-color: #f8fafc;
+  border-radius: 12px;
+  border-left: 5px solid var(--color-brand, #0a6837);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.payment-notice p {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: #4b5563;
+  margin-bottom: 0.85rem;
+}
+
+.payment-notice p:last-child {
+  margin-bottom: 0;
+}
+
+.delivery-disclaimer {
+  font-style: italic;
+  font-weight: 500;
+  color: #374151 !important;
 }
 
 /* ── BENEFITS ── */

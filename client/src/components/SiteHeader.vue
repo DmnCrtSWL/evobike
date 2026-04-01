@@ -17,55 +17,55 @@ const menuItems = [
   {
     label: 'Bicicletas Eléctricas',
     children: [
-      { label: 'Aguila Pro', to: '/producto/aguila-pro' },
-      { label: 'Aurora', to: '/producto/aurora' },
-      { label: 'Galaxy Plus', to: '/producto/galaxy-plus' },
-      { label: 'Jaguar', to: '/producto/jaguar' },
-      { label: 'Moped', to: '/producto/moped' },
-      { label: 'Rayo Pro', to: '/producto/rayo-pro' },
-      { label: 'Sol', to: '/producto/sol' },
-      { label: 'Tigre', to: '/producto/tigre' },
+      { label: 'Aguila Pro', to: '/producto/5731' },
+      { label: 'Aurora', to: '/producto/5727' },
+      { label: 'Galaxy Plus', to: '/producto/5732' },
+      { label: 'Jaguar', to: '/producto/5729' },
+      { label: 'Moped', to: '/producto/5734' },
+      { label: 'Rayo Pro', to: '/producto/5733' },
+      { label: 'Sol', to: '/producto/5730' },
+      { label: 'Tigre', to: '/producto/5728' },
     ]
   },
   {
     label: 'Bicimotos',
     children: [
-      { label: 'Polar', to: '/producto/polar' },
-      { label: 'Urbex', to: '/producto/urbex' },
-      { label: 'Zeus', to: '/producto/zeus' },
+      { label: 'Polar', to: '/producto/5735' },
+      { label: 'Urbex', to: '/producto/5737' },
+      { label: 'Zeus', to: '/producto/5736' },
     ]
   },
   {
     label: 'Triciclos',
     children: [
-      { label: 'Beetle', to: '/producto/beetle' },
-      { label: 'Family Q', to: '/producto/family-q' },
-      { label: 'Family Q Plus', to: '/producto/family-q-plus' },
-      { label: 'Golf', to: '/producto/golf' },
-      { label: 'Golf Plus', to: '/producto/golf-plus' },
+      { label: 'Beetle', to: '/producto/5746' },
+      { label: 'Family Q', to: '/producto/5744' },
+      { label: 'Family Q Plus', to: '/producto/5745' },
+      { label: 'Golf', to: '/producto/5747' },
+      { label: 'Golf Plus', to: '/producto/5748' },
     ]
   },
   {
     label: 'Scooters',
     children: [
-      { label: 'M1', to: '/producto/m1' },
-      { label: 'M4', to: '/producto/m4' },
-      { label: 'M5', to: '/producto/m5' },
+      { label: 'M1', to: '/producto/5741' },
+      { label: 'M4', to: '/producto/5742' },
+      { label: 'M5', to: '/producto/5743' },
     ]
   },
   {
     label: 'Carga',
     children: [
-      { label: 'Cargo', to: '/producto/cargo' },
-      { label: 'Evotank 160 cm', to: '/producto/evotank-160-cm' },
+      { label: 'Cargo', to: '/producto/5739' },
+      { label: 'Evotank 160 cm', to: '/producto/5738' },
     ]
   },
   {
     label: 'Para Niños',
     children: [
-      { label: 'Ricochet', to: '/producto/ricochet' },
-      { label: 'Python', to: '/producto/python' },
-      { label: 'Evokid', to: '/producto/evokid' },
+      { label: 'Ricochet', to: '/producto/5749' },
+      { label: 'Python', to: '/producto/5750' },
+      { label: 'Evokid', to: '/producto/5751' },
     ]
   },
 ]
@@ -101,7 +101,7 @@ function closeMobileMenu() {
         </div>
         <div class="top-col-center">
           <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 17h4V5H2v12h3"/><path d="M20 17h2v-3.34a4 4 0 0 0-1.17-2.83L19 9h-5"/><path d="M14 17h1"/><circle cx="7.5" cy="17.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
-          <span>¡Envíos gratuitos a todo México!</span>
+          <span>¡Envíos a todo México!</span>
         </div>
         <div class="top-col-right">
           <a href="https://www.facebook.com/Evobike.Zamora" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="Facebook">

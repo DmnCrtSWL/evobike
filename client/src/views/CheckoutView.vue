@@ -144,6 +144,8 @@ const initializePaymentBrick = async () => {
               const payload = {
                 paymentData: cardFormData,
                 customerInfo: customerInfo,
+                totalPedido: orderTotal.value,
+                envioCosto: shippingCost.value || 0,
                 cartItems: cart.items.map(item => ({
                   id: item.id,
                   quantity: item.quantity,
@@ -163,8 +165,9 @@ const initializePaymentBrick = async () => {
               console.log('Resultado del pago:', result)
               
               if (result.status === 'approved' || result.status === 'in_process') {
+                // ── Mostrar pantalla de éxito ──────────────────────────────
                 orderSummary.value = {
-                  id: result.wc_order_id || result.id,
+                  id: String(result.order_id || result.id).padStart(5, '0'),
                   date: new Date().toLocaleDateString('es-MX', { 
                     year: 'numeric', 
                     month: 'long', 
@@ -413,7 +416,7 @@ const formatPrice = (price) => {
               </div>
               <div class="total-row shipping-free" v-else-if="shippingStatus === 'free'">
                 <span>Envío</span>
-                <span class="shipping-badge free">🎉 Gratis</span>
+                <span class="shipping-badge free">Sin costo</span>
               </div>
               <div class="total-row" v-else-if="shippingStatus === 'paid'">
                 <span>Envío</span>

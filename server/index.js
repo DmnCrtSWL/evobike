@@ -61,317 +61,168 @@ const authMiddleware = (req, res, next) => {
 // Configurar Mercado Pago
 const client = new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN || "TEST" });
 
+// Helper para mapear producto de DB al formato que espera el frontend
+const mapProductForClient = (p) => {
+  const currentPriceNum = parseFloat(p.precio) * (1 - (parseFloat(p.descuento_porcentaje) || 0) / 100);
+  const regularPriceNum = parseFloat(p.precio);
+  
+  return {
+    id: p.id,
+    name: p.nombre,
+    permalink: `/producto/${p.id}`,
+    price: currentPriceNum,
+    priceFormatted: `$${currentPriceNum.toLocaleString("es-MX", { minimumFractionDigits: 2 })}`,
+    compareAtPriceFormatted: regularPriceNum > currentPriceNum ? `$${regularPriceNum.toLocaleString("es-MX", { minimumFractionDigits: 2 })}` : null,
+    image: p.foto_principal, // Ya es URL de Cloudinary
+    imageOriginal: p.foto_principal,
+    badge: p.descuento_porcentaje > 0 ? "Oferta" : "",
+    categories: p.categoria ? [{ id: p.categoria, name: p.categoria }] : [],
+    attributes: []
+  };
+};
+
 app.get("/api/products/bestsellers", async (req, res) => {
   try {
-    const response = await axios.get(`${WC_URL}/wp-json/wc/v3/products`, {
-      params: {
-        orderby: "popularity",
-        order: "desc",
-        per_page: 4,
-        status: "publish",
-        consumer_key: WC_KEY,
-        consumer_secret: WC_SECRET,
-      },
-    });
-
-    // Validar que sea un array (si WC devuelve error, viene como objeto)
-    if (!Array.isArray(response.data)) {
-      console.error("WC bestsellers response is not an array:", JSON.stringify(response.data));
-      return res.status(502).json({ error: "Respuesta inesperada de WooCommerce", detail: response.data });
-    }
-
-    // Mapeamos solo lo que necesita el frontend para no enviar data innecesaria
-    const mappedProducts = response.data.map((product) => {
-      // Extraer URLs de imagen principal (si hay)
-      let primaryImage = null;
-      if (product.images && product.images.length > 0) {
-        primaryImage = product.images[0].src;
-      }
-
-      // Formatear precios (WC envía precios numéricos como string)
-      const currentPriceNum = product.price ? parseFloat(product.price) : 0;
-      const regularPriceNum = product.regular_price
-        ? parseFloat(product.regular_price)
-        : 0;
-
-      const currentPriceFormatted = product.price
-        ? `$ ${currentPriceNum.toLocaleString("es-MX", { minimumFractionDigits: 2 })}`
-        : "";
-      const regularPriceFormatted = product.regular_price
-        ? `$ ${regularPriceNum.toLocaleString("es-MX", { minimumFractionDigits: 2 })}`
-        : "";
-
-      return {
-        id: product.id,
-        name: product.name,
-        permalink: product.permalink, // Link al producto
-        // Para proxy
-        imageOriginal: primaryImage,
-        // Para cálculos numéricos en el carrito
-        price: currentPriceNum,
-        // Para mostrar strings bonitos en la UI
-        priceFormatted: currentPriceFormatted,
-        compareAtPriceFormatted:
-          currentPriceNum !== regularPriceNum && regularPriceNum > 0
-            ? regularPriceFormatted
-            : null,
-        image: primaryImage ? "/api/image-proxy?url=" + encodeURIComponent(primaryImage) : null,
-        // Lógica de "badge" (Popular, Oferta, etc.) se puede sacar de etiquetas o estado "on_sale"
-        badge: product.on_sale ? "Oferta" : product.featured ? "Destacado" : "",
-      };
-    });
-
-    res.json(mappedProducts);
+    // Tomamos 4 al azar o los más recientes como simulados "bestsellers"
+    const { rows } = await db.query(`SELECT * FROM productos WHERE publicado = true AND deleted_at IS NULL ORDER BY id DESC LIMIT 4`);
+    res.json(rows.map(mapProductForClient));
   } catch (error) {
-    console.error("Error fetching WC products:", error.message);
-    res.status(500).json({ error: "Error connecting to WooCommerce store" });
+    console.error("Error fetching bestsellers:", error.message);
+    res.status(500).json({ error: "Error de base de datos" });
   }
 });
 
 app.get("/api/products/random", async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 4;
-    // Pedir más productos para poder mezclarlos y no dar siempre los mismos
-    const response = await axios.get(`${WC_URL}/wp-json/wc/v3/products`, {
-      params: {
-        per_page: 20,
-        status: "publish",
-        consumer_key: WC_KEY,
-        consumer_secret: WC_SECRET,
-      },
-    });
-
-    // Validar que sea un array (si WC devuelve error, viene como objeto)
-    if (!Array.isArray(response.data)) {
-      console.error("WC random response is not an array:", JSON.stringify(response.data));
-      return res.status(502).json({ error: "Respuesta inesperada de WooCommerce", detail: response.data });
-    }
-
-    let allProducts = response.data;
-
-    // Sort array randomly
-    allProducts.sort(() => 0.5 - Math.random());
-    
-    // Tomar el límite solicitado
-    const selectedProducts = allProducts.slice(0, limit);
-
-    // Mapear
-    const mappedProducts = selectedProducts.map((product) => {
-      let primaryImage = null;
-      if (product.images && product.images.length > 0) {
-        primaryImage = product.images[0].src;
-      }
-      const currentPriceNum = product.price ? parseFloat(product.price) : 0;
-      const regularPriceNum = product.regular_price ? parseFloat(product.regular_price) : 0;
-      const currentPriceFormatted = product.price ? `$ ${currentPriceNum.toLocaleString("es-MX", { minimumFractionDigits: 2 })}` : "";
-      const regularPriceFormatted = product.regular_price ? `$ ${regularPriceNum.toLocaleString("es-MX", { minimumFractionDigits: 2 })}` : "";
-
-      return {
-        id: product.id,
-        name: product.name,
-        permalink: product.permalink,
-        imageOriginal: primaryImage,
-        price: currentPriceNum,
-        priceFormatted: currentPriceFormatted,
-        compareAtPriceFormatted: currentPriceNum !== regularPriceNum && regularPriceNum > 0 ? regularPriceFormatted : null,
-        image: primaryImage ? "/api/image-proxy?url=" + encodeURIComponent(primaryImage) : null,
-        badge: product.on_sale ? "Oferta" : product.featured ? "Destacado" : "",
-      };
-    });
-
-    res.json(mappedProducts);
+    const { rows } = await db.query(
+      `SELECT * FROM productos WHERE publicado = true AND deleted_at IS NULL ORDER BY RANDOM() LIMIT $1`,
+      [limit]
+    );
+    res.json(rows.map(mapProductForClient));
   } catch (error) {
-    console.error("Error fetching random WC products:", error.message);
-    res.status(500).json({ error: "Error connecting to WooCommerce store" });
+    console.error("Error fetching random products:", error.message);
+    res.status(500).json({ error: "Error de base de datos" });
   }
 });
 
 app.get("/api/categories", async (req, res) => {
   try {
-    const response = await axios.get(`${WC_URL}/wp-json/wc/v3/products/categories`, {
-      params: {
-        consumer_key: WC_KEY,
-        consumer_secret: WC_SECRET,
-        per_page: 100,
-        hide_empty: true
-      },
-    });
-    res.json(response.data);
+    const { rows } = await db.query(`
+      SELECT categoria AS name, MAX(categoria) AS id, COUNT(*) AS count 
+      FROM productos 
+      WHERE publicado = true AND deleted_at IS NULL AND categoria IS NOT NULL
+      GROUP BY categoria
+    `);
+    res.json(rows.map(r => ({ ...r, count: parseInt(r.count) })));
   } catch (error) {
     console.error("Error fetching categories:", error.message);
-    res.status(500).json({ error: "Error connecting to WooCommerce categories" });
+    res.status(500).json({ error: "Error de base de datos" });
   }
 });
 
 app.get("/api/products", async (req, res) => {
   try {
-    const { category, min_price, max_price, attribute, attribute_term, search } = req.query;
+    const { category, search, attribute_term } = req.query;
     
-    let params = {
-      per_page: 100,
-      status: "publish",
-      consumer_key: WC_KEY,
-      consumer_secret: WC_SECRET,
-    };
-
-    if (category) params.category = category;
-    if (min_price) params.min_price = min_price;
-    if (max_price) params.max_price = max_price;
-    if (search) params.search = search;
-    if (attribute && attribute_term) {
-      params.attribute = attribute;
-      params.attribute_term = attribute_term;
+    let query = `SELECT * FROM productos WHERE publicado = true AND deleted_at IS NULL`;
+    const params = [];
+    
+    if (category) {
+      params.push(category);
+      query += ` AND categoria = $${params.length}`;
+    }
+    
+    if (search) {
+      params.push(`%${search}%`);
+      query += ` AND (nombre ILIKE $${params.length} OR descripcion ILIKE $${params.length})`;
     }
 
-    const response = await axios.get(`${WC_URL}/wp-json/wc/v3/products`, { params });
-
-    if (!Array.isArray(response.data)) {
-      return res.status(502).json({ error: "Respuesta inesperada", detail: response.data });
+    if (attribute_term) {
+      // Filtrar por color en subquery
+      params.push(attribute_term);
+      query += ` AND id IN (SELECT producto_id FROM productos_colores WHERE nombre = $${params.length})`;
     }
+    
+    query += ` ORDER BY id DESC`;
 
-    const mappedProducts = response.data.map((product) => {
-      let primaryImage = null;
-      if (product.images && product.images.length > 0) primaryImage = product.images[0].src;
-      const currentPriceNum = product.price ? parseFloat(product.price) : 0;
-      const regularPriceNum = product.regular_price ? parseFloat(product.regular_price) : 0;
-      const currentPriceFormatted = product.price ? `$ ${currentPriceNum.toLocaleString("es-MX", { minimumFractionDigits: 2 })}` : "";
-      const regularPriceFormatted = product.regular_price ? `$ ${regularPriceNum.toLocaleString("es-MX", { minimumFractionDigits: 2 })}` : "";
-
-      return {
-        id: product.id,
-        name: product.name,
-        permalink: product.permalink,
-        price: currentPriceNum,
-        priceFormatted: currentPriceFormatted,
-        compareAtPriceFormatted: currentPriceNum !== regularPriceNum && regularPriceNum > 0 ? regularPriceFormatted : null,
-        image: primaryImage ? "/api/image-proxy?url=" + encodeURIComponent(primaryImage) : null,
-        badge: product.on_sale ? "Oferta" : product.featured ? "Destacado" : "",
-        categories: product.categories || [],
-        attributes: product.attributes || []
-      };
-    });
-
-    res.json(mappedProducts);
+    const { rows } = await db.query(query, params);
+    res.json(rows.map(mapProductForClient));
   } catch (error) {
     console.error("Error fetching all products:", error.message);
-    res.status(500).json({ error: "Error conectando a WooCommerce" });
+    res.status(500).json({ error: "Error de base de datos" });
   }
 });
 
 app.get("/api/attributes/colors", async (req, res) => {
   try {
-    const attrsResponse = await axios.get(`${WC_URL}/wp-json/wc/v3/products/attributes`, {
-        params: { consumer_key: WC_KEY, consumer_secret: WC_SECRET }
-    });
-    
-    const colorAttr = attrsResponse.data.find(a => a.name.toLowerCase() === 'color' || a.slug === 'pa_color' || a.slug === 'color');
-    
-    if (colorAttr) {
-        const termsResponse = await axios.get(`${WC_URL}/wp-json/wc/v3/products/attributes/${colorAttr.id}/terms`, {
-             params: { consumer_key: WC_KEY, consumer_secret: WC_SECRET, per_page: 100 }
-        });
-        res.json({ attributeId: colorAttr.id, attributeSlug: colorAttr.slug, terms: termsResponse.data });
-    } else {
-        res.json({ terms: [] });
-    }
+    const { rows } = await db.query(`SELECT DISTINCT nombre FROM productos_colores`);
+    const terms = rows.map((r, i) => ({ id: i, term_id: r.nombre, name: r.nombre }));
+    res.json({ terms });
   } catch(error) {
-      console.error("Error fetching colors:", error.message);
-      res.json({ terms: [] });
+    console.error("Error fetching colors:", error.message);
+    res.json({ terms: [] });
   }
 });
 
 app.get("/api/products/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    let product;
-
-    if (!isNaN(id)) {
-      // Si es un ID numérico
-      const response = await axios.get(`${WC_URL}/wp-json/wc/v3/products/${id}`, {
-        params: {
-          consumer_key: WC_KEY,
-          consumer_secret: WC_SECRET,
-        },
-      });
-      product = response.data;
-    } else {
-      // Si es un slug (string)
-      const response = await axios.get(`${WC_URL}/wp-json/wc/v3/products`, {
-        params: {
-          slug: id,
-          consumer_key: WC_KEY,
-          consumer_secret: WC_SECRET,
-        },
-      });
-      if (!response.data || response.data.length === 0) {
-        return res.status(404).json({ error: "Producto no encontrado" });
-      }
-      product = response.data[0];
-    }
-
-    let primaryImage = null;
+    
+    // Si viene como string 'random', lo ignoramos aquí por si choca
+    if (id === 'random') return res.status(404).json({ error: "Not found" });
+    
+    const { rows } = await db.query(`SELECT * FROM productos WHERE id = $1 AND publicado = true AND deleted_at IS NULL`, [id]);
+    if (rows.length === 0) return res.status(404).json({ error: "Producto no encontrado" });
+    
+    const p = rows[0];
+    
+    const { rows: colores } = await db.query(`SELECT * FROM productos_colores WHERE producto_id = $1`, [p.id]);
+    
+    const mappedProduct = mapProductForClient(p);
+    mappedProduct.description = p.descripcion ? p.descripcion.replace(/(<([^>]+)>)/gi, "") : 'Sin descripción';
+    mappedProduct.shortDescription = p.descripcion ? p.descripcion.substring(0, 100) + '...' : '';
+    
+    // Preparar imágenes de galería (galeria general + foto de cada color + principal)
     let images = [];
-    if (product.images && product.images.length > 0) {
-      primaryImage = product.images[0].src;
-      images = product.images;
+    if (p.foto_principal) images.push({ id: 'main', src: p.foto_principal, alt: p.nombre });
+    if (p.galeria && Array.isArray(p.galeria)) {
+      p.galeria.forEach((g, i) => images.push({ id: `gal_${i}`, src: g, alt: 'Extra' }));
     }
-
-    // Fetch variations if the product has them
-    let variationDetails = [];
-    if (product.type === 'variable' || (product.variations && product.variations.length > 0)) {
-      try {
-        const varResponse = await axios.get(`${WC_URL}/wp-json/wc/v3/products/${product.id}/variations`, {
-          params: {
-            consumer_key: WC_KEY,
-            consumer_secret: WC_SECRET,
-            per_page: 100 // Get all variations (up to 100)
-          },
-        });
-        
-        // Map variations to only what we need
-        variationDetails = varResponse.data.map(v => ({
-          id: v.id,
-          attributes: v.attributes, // array of { id, name, option }
-          image: v.image ? v.image.src : null,
-          price: v.price ? parseFloat(v.price) : 0,
-        }));
-      } catch (err) {
-        console.error("Error fetching variations:", err.message);
-      }
+    colores.forEach(c => { if(c.foto) images.push({ id: `col_${c.id}`, src: c.foto, alt: c.nombre }); });
+    mappedProduct.images = images;
+    
+    // Preparar Atributos (opciones elegibles)
+    mappedProduct.attributes = [];
+    if (p.voltajes && Array.isArray(p.voltajes) && p.voltajes.length > 0) {
+      mappedProduct.attributes.push({ id: 'voltaje', name: 'Voltaje', options: p.voltajes });
     }
+    if (colores.length > 0) {
+      mappedProduct.attributes.push({ id: 'color', name: 'Color', options: colores.map(c => c.nombre) });
+    }
+    
+    // Variaciones para el cambio de imagen
+    mappedProduct.variations = colores.map(c => ({
+      id: c.id,
+      image: c.foto,
+      attributes: [{ name: 'Color', option: c.nombre }]
+    }));
 
-    const currentPriceNum = product.price ? parseFloat(product.price) : 0;
-    const currentPriceFormatted = product.price
-      ? `$ ${currentPriceNum.toLocaleString("es-MX", { minimumFractionDigits: 2 })}`
-      : "";
-
-    // Retornamos un producto formateado para la vista individual
-    res.json({
-      id: product.id,
-      name: product.name,
-      imageOriginal: primaryImage,
-      description: product.description ? product.description.replace(/(<([^>]+)>)/gi, "") : 'Sin descripción', // strip basic HTML
-      shortDescription: product.short_description ? product.short_description.replace(/(<([^>]+)>)/gi, "") : '',
-      price: currentPriceNum,
-      priceFormatted: currentPriceFormatted,
-      image: primaryImage,
-      images: images,
-      attributes: product.attributes || [],
-      variations: variationDetails,
-    });
+    res.json(mappedProduct);
   } catch (error) {
-    console.error("Error fetching single WC product:", error.message);
-    res.status(500).json({ error: "Error connecting to WooCommerce store" });
+    console.error("Error fetching single product:", error.message);
+    res.status(500).json({ error: "Error de base de datos" });
   }
 });
 
 // Ruta para procesar el pago directamente con Payment Brick
 app.post("/api/process_payment", async (req, res) => {
+  const clientDB = await db.connect();
   try {
-    const { paymentData, customerInfo, cartItems } = req.body;
+    const { paymentData, customerInfo, cartItems, totalPedido, envioCosto } = req.body;
     
+    // Iniciar el procesado del pago
     const payment = new Payment(client);
-    
     const result = await payment.create({
       body: {
         transaction_amount: paymentData.transaction_amount,
@@ -387,66 +238,68 @@ app.post("/api/process_payment", async (req, res) => {
       }
     });
 
-    let wcOrderId = null;
+    const mpStatus = result.status; // 'approved', 'in_process', 'rejected', etc.
+    let orderId = null;
 
-    // Si el pago es exitoso o está en proceso, creamos la orden en WooCommerce
-    if (result.status === 'approved' || result.status === 'in_process') {
-      try {
-        const orderPayload = {
-          payment_method: 'mercadopago',
-          payment_method_title: 'Mercado Pago',
-          set_paid: true,
-          billing: {
-            first_name: customerInfo.firstName || '',
-            last_name: customerInfo.lastName || '',
-            address_1: customerInfo.address || '',
-            city: customerInfo.city || '',
-            state: customerInfo.state || '',
-            postcode: customerInfo.postcode || '',
-            country: 'MX',
-            email: customerInfo.email || '',
-            phone: customerInfo.phone || ''
-          },
-          shipping: {
-            first_name: customerInfo.firstName || '',
-            last_name: customerInfo.lastName || '',
-            address_1: customerInfo.address || '',
-            city: customerInfo.city || '',
-            state: customerInfo.state || '',
-            postcode: customerInfo.postcode || '',
-            country: 'MX'
-          },
-          line_items: cartItems.map(item => ({
-            product_id: item.id,
-            quantity: item.quantity
-          }))
-        };
+    try {
+      await clientDB.query('BEGIN');
+      
+      // SIEMPRE insertamos el pedido/cliente local, ya sea exitoso o fallido
+      const { rows: [clienteNuevo] } = await clientDB.query(
+        `INSERT INTO clientes_evobike
+          (nombre, apellido, email, telefono, direccion, ciudad, estado,
+           codigo_postal, total_pedido, carrito, mp_payment_id, mp_status, envio_costo)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb,$11,$12,$13)
+         RETURNING id`,
+        [
+          customerInfo.firstName || '',
+          customerInfo.lastName || '',
+          customerInfo.email || '',
+          customerInfo.phone || '',
+          customerInfo.address || '',
+          customerInfo.city || '',
+          customerInfo.state || '',
+          customerInfo.postcode || '',
+          parseFloat(totalPedido) || paymentData.transaction_amount || 0,
+          JSON.stringify(cartItems || []),
+          result.id || null,
+          mpStatus,
+          parseFloat(envioCosto) || 0
+        ]
+      );
+      
+      orderId = clienteNuevo.id;
 
-        const wcResponse = await axios.post(`${WC_URL}/wp-json/wc/v3/orders`, orderPayload, {
-          params: {
-            consumer_key: WC_KEY,
-            consumer_secret: WC_SECRET
-          }
-        });
-
-        wcOrderId = wcResponse.data.id;
-        console.log(`Orden creada en WooCommerce con ID: ${wcOrderId}`);
-      } catch (wcError) {
-        console.error("Error al crear la orden en WooCommerce:", wcError.response ? wcError.response.data : wcError.message);
-        // Aun así devolvemos el éxito del pago, pero logueamos el error de WC
+      // Si el pago es exitoso o en proceso, reducimos el stock
+      if (mpStatus === 'approved' || mpStatus === 'in_process') {
+        for (const item of cartItems) {
+           await clientDB.query(
+             `UPDATE productos SET stock = GREATEST(stock - $1, 0) WHERE id = $2`,
+             [item.quantity, item.id]
+           );
+        }
       }
+      
+      await clientDB.query('COMMIT');
+      console.log(`Orden ${orderId} creada en DB local con estado ${mpStatus}`);
+    } catch (dbError) {
+      await clientDB.query('ROLLBACK');
+      console.error("Error guardando orden en BD:", dbError.message);
+      // Ojo, el pago de MP se hizo, pero la db local falló.
     }
 
     res.json({
       status: result.status,
       status_detail: result.status_detail,
       id: result.id,
-      wc_order_id: wcOrderId
+      order_id: orderId // El ID local, servirá de "Número de orden"
     });
 
   } catch (error) {
     console.error("Error processing MP payment:", error);
     res.status(500).json({ error: "No se pudo procesar el pago" });
+  } finally {
+    clientDB.release();
   }
 });
 
@@ -641,6 +494,471 @@ app.get("/api/clientes/pedidos", authMiddleware, async (req, res) => {
   }
 });
 
+
+// =============================================
+// ADMIN — Productos
+// =============================================
+
+const multer = require('multer');
+const { v2: cloudinary } = require('cloudinary');
+const streamifier = require('streamifier');
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+const upload = multer({ storage: multer.memoryStorage() });
+
+// Helper: Subir buffer a Cloudinary y devolver URL segura
+const uploadToCloudinary = (buffer, folder = 'evobike/productos') =>
+  new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { folder, resource_type: 'image' },
+      (err, result) => {
+        if (err) return reject(err);
+        resolve(result.secure_url);
+      }
+    );
+    streamifier.createReadStream(buffer).pipe(stream);
+  });
+
+// GET /api/admin/productos?page=1&limit=10
+app.get('/api/admin/productos', async (req, res) => {
+  const page  = Math.max(1, parseInt(req.query.page)  || 1);
+  const limit = Math.max(1, parseInt(req.query.limit) || 10);
+  const offset = (page - 1) * limit;
+  try {
+    const [{ rows: [{ total }] }, { rows: productos }] = await Promise.all([
+      db.query(`SELECT COUNT(*) AS total FROM productos WHERE deleted_at IS NULL`),
+      db.query(
+        `SELECT p.id, p.nombre, p.precio, p.descuento_porcentaje, p.stock,
+                p.categoria, p.publicado, p.foto_principal,
+                TO_CHAR(p.created_at, 'DD/MM/YYYY') AS created_at,
+                u.usuario AS autor
+         FROM productos p
+         LEFT JOIN admin_usuarios u ON u.id = p.admin_usuario_id
+         WHERE p.deleted_at IS NULL
+         ORDER BY p.created_at DESC
+         LIMIT $1 OFFSET $2`,
+        [limit, offset]
+      )
+    ]);
+    res.json({ data: productos, total: parseInt(total), page, limit });
+  } catch (err) {
+    console.error('GET /api/admin/productos:', err.message);
+    res.status(500).json({ error: 'Error al obtener productos' });
+  }
+});
+
+// POST /api/admin/productos — Crear producto con imágenes a Cloudinary
+const productoFields = upload.fields([
+  { name: 'foto_principal', maxCount: 1 },
+  { name: 'galeria', maxCount: 20 },
+  { name: 'colores_fotos', maxCount: 20 },
+]);
+
+app.post('/api/admin/productos', productoFields, async (req, res) => {
+  const {
+    nombre, descripcion, precio, descuento_porcentaje,
+    stock, categoria, publicado, voltajes, colores_nombres
+  } = req.body;
+
+  if (!nombre || !precio)
+    return res.status(400).json({ error: 'Nombre y precio son obligatorios' });
+
+  const client = await db.connect();
+  try {
+    await client.query('BEGIN');
+
+    // Subir imagen principal a Cloudinary
+    let fotoPrincipalUrl = null;
+    if (req.files?.foto_principal?.[0]) {
+      fotoPrincipalUrl = await uploadToCloudinary(req.files.foto_principal[0].buffer);
+    }
+
+    // Subir galería
+    const galeriaUrls = [];
+    if (req.files?.galeria) {
+      for (const file of req.files.galeria) {
+        galeriaUrls.push(await uploadToCloudinary(file.buffer, 'evobike/galeria'));
+      }
+    }
+
+    // Parsear arrays
+    const voltajesArr = voltajes ? JSON.parse(voltajes) : [];
+    const coloresNombresArr = colores_nombres ? JSON.parse(colores_nombres) : [];
+
+    // Insertar producto
+    const { rows: [producto] } = await client.query(
+      `INSERT INTO productos
+        (nombre, descripcion, precio, descuento_porcentaje, stock, categoria,
+         publicado, foto_principal, galeria, voltajes)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10::jsonb)
+       RETURNING id`,
+      [
+        nombre, descripcion, parseFloat(precio),
+        parseFloat(descuento_porcentaje) || 0,
+        parseInt(stock) || 0,
+        categoria,
+        publicado === 'true',
+        fotoPrincipalUrl,
+        JSON.stringify(galeriaUrls),
+        JSON.stringify(voltajesArr)
+      ]
+    );
+
+    // Insertar variaciones de color
+    if (coloresNombresArr.length > 0) {
+      const coloresFotos = req.files?.colores_fotos || [];
+      for (let i = 0; i < coloresNombresArr.length; i++) {
+        let fotoColorUrl = null;
+        if (coloresFotos[i]) {
+          fotoColorUrl = await uploadToCloudinary(coloresFotos[i].buffer, 'evobike/colores');
+        }
+        await client.query(
+          `INSERT INTO productos_colores (producto_id, nombre, foto) VALUES ($1, $2, $3)`,
+          [producto.id, coloresNombresArr[i], fotoColorUrl]
+        );
+      }
+    }
+
+    await client.query('COMMIT');
+    res.status(201).json({ id: producto.id, message: 'Producto creado correctamente' });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('POST /api/admin/productos:', err.message);
+    res.status(500).json({ error: err.message || 'Error al crear producto' });
+  } finally {
+    client.release();
+  }
+});
+
+// GET /api/admin/productos/:id — Obtener producto + colores para editar
+app.get('/api/admin/productos/:id', async (req, res) => {
+  try {
+    const { rows } = await db.query(
+      `SELECT * FROM productos WHERE id = $1 AND deleted_at IS NULL`,
+      [req.params.id]
+    );
+    if (rows.length === 0) return res.status(404).json({ error: 'Producto no encontrado' });
+    
+    // Obtener colores
+    const { rows: colores } = await db.query(
+      `SELECT id, nombre, foto FROM productos_colores WHERE producto_id = $1 ORDER BY id ASC`,
+      [req.params.id]
+    );
+    
+    const producto = rows[0];
+    producto.colores = colores;
+    res.json(producto);
+  } catch (err) {
+    console.error('GET /api/admin/productos/:id error:', err.message);
+    res.status(500).json({ error: 'Error al obtener producto' });
+  }
+});
+
+// PUT /api/admin/productos/:id — Editar producto (versión simplificada que actualiza los datos base)
+app.put('/api/admin/productos/:id', productoFields, async (req, res) => {
+  const { id } = req.params;
+  const {
+    nombre, descripcion, precio, descuento_porcentaje,
+    stock, categoria, publicado, voltajes, colores_nombres, colores_ids_to_keep
+  } = req.body;
+
+  if (!nombre || !precio)
+    return res.status(400).json({ error: 'Nombre y precio son obligatorios' });
+
+  const client = await db.connect();
+  try {
+    await client.query('BEGIN');
+
+    // Construcción dinámica de la query para evitar errores de índices ($1, $2...)
+    const fields = [
+      'nombre', 'descripcion', 'precio', 'descuento_porcentaje',
+      'stock', 'categoria', 'publicado', 'voltajes'
+    ];
+    const values = [
+      nombre, descripcion, parseFloat(precio), parseFloat(descuento_porcentaje) || 0,
+      parseInt(stock) || 0, categoria, publicado === 'true', voltajes || '[]'
+    ];
+
+    // Manejar imagen principal nueva
+    if (req.files?.foto_principal?.[0]) {
+      const url = await uploadToCloudinary(req.files.foto_principal[0].buffer);
+      fields.push('foto_principal');
+      values.push(url);
+    }
+
+    const setQuery = fields.map((f, i) => {
+      if (f === 'voltajes') return `${f} = $${i + 1}::jsonb`;
+      return `${f} = $${i + 1}`;
+    }).join(', ');
+    
+    // El ID es el último parámetro
+    values.push(id);
+    const query = `UPDATE productos SET ${setQuery}, edited_at = NOW() WHERE id = $${values.length} AND deleted_at IS NULL RETURNING id`;
+
+    const result = await client.query(query, values);
+
+    if (result.rowCount === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Producto no encontrado' });
+    }
+
+    // Manejar galería nueva
+    if (req.files?.galeria) {
+      // Obtener galería actual para no pisarla (o el front enviará luego que borrar)
+      const { rows: [pActual] } = await client.query('SELECT galeria FROM productos WHERE id = $1', [id]);
+      let galeriaArr = pActual?.galeria || [];
+      for (const file of req.files.galeria) {
+        const url = await uploadToCloudinary(file.buffer, 'evobike/galeria');
+        galeriaArr.push(url);
+      }
+      // Actualizar columna galeria
+      await client.query('UPDATE productos SET galeria = $1::jsonb WHERE id = $2', [JSON.stringify(galeriaArr), id]);
+    }
+
+    // Manejar colores (Simplificado para el caso de Tigre y otros)
+    if (colores_nombres) {
+      const nombresArr = JSON.parse(colores_nombres);
+      const fotosNuevas = req.files?.colores_fotos || [];
+      
+      // Borramos colores viejos para este producto e insertamos la nueva lista
+      // (Nota: Esto es destructivo para fotos viejas si no se re-envían, 
+      // pero soluciona el problema de Tigre que no tenía fotos iniciales)
+      await client.query('DELETE FROM productos_colores WHERE producto_id = $1', [id]);
+      
+      let fotoIdx = 0;
+      for (let i = 0; i < nombresArr.length; i++) {
+        let fotoUrl = null;
+        // Si hay una foto nueva en el array de archivos de Multer
+        if (fotosNuevas[fotoIdx]) {
+          fotoUrl = await uploadToCloudinary(fotosNuevas[fotoIdx].buffer, 'evobike/colores');
+          fotoIdx++;
+        }
+        await client.query(
+          'INSERT INTO productos_colores (producto_id, nombre, foto) VALUES ($1, $2, $3)',
+          [id, nombresArr[i], fotoUrl]
+        );
+      }
+    }
+    
+    await client.query('COMMIT');
+    res.json({ message: 'Producto actualizado correctamente' });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('PUT /api/admin/productos error:', err);
+    res.status(500).json({ error: err.message || 'Error al actualizar producto' });
+  } finally {
+    client.release();
+  }
+});
+
+// DELETE /api/admin/productos/:id — Soft delete
+app.delete('/api/admin/productos/:id', async (req, res) => {
+  try {
+    const result = await db.query(
+      `UPDATE productos SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL`,
+      [req.params.id]
+    );
+    if (result.rowCount === 0) return res.status(404).json({ error: 'Producto no encontrado' });
+    res.json({ message: 'Producto eliminado correctamente' });
+  } catch (err) {
+    console.error('DELETE /api/admin/productos:', err.message);
+    res.status(500).json({ error: 'Error al eliminar producto' });
+  }
+});
+
+
+
+
+// =============================================
+// CLIENTES — Checkout (tienda pública)
+// =============================================
+
+// POST /api/clientes — Llamado desde el checkout del client al procesar pago exitoso
+app.post('/api/clientes', async (req, res) => {
+  const {
+    firstName, lastName, email, phone,
+    address, city, state, postcode,
+    cartItems, totalPedido, envioCosto,
+    mpPaymentId, mpStatus
+  } = req.body;
+
+  if (!firstName) return res.status(400).json({ error: 'Nombre requerido' });
+
+  try {
+    const { rows: [cliente] } = await db.query(
+      `INSERT INTO clientes_evobike
+        (nombre, apellido, email, telefono, direccion, ciudad, estado,
+         codigo_postal, total_pedido, carrito, mp_payment_id, mp_status, envio_costo)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb,$11,$12,$13)
+       RETURNING id`,
+      [
+        firstName,
+        lastName || '',
+        email || '',
+        phone || '',
+        address || '',
+        city || '',
+        state || '',
+        postcode || '',
+        parseFloat(totalPedido) || 0,
+        JSON.stringify(cartItems || []),
+        mpPaymentId || null,
+        mpStatus || null,
+        parseFloat(envioCosto) || 0
+      ]
+    );
+    res.status(201).json({ id: cliente.id });
+  } catch (err) {
+    console.error('POST /api/clientes:', err.message);
+    res.status(500).json({ error: 'Error al guardar cliente' });
+  }
+});
+
+// GET /api/admin/clientes?page=1&limit=10
+app.get('/api/admin/clientes', async (req, res) => {
+  const page  = Math.max(1, parseInt(req.query.page)  || 1);
+  const limit = Math.max(1, parseInt(req.query.limit) || 10);
+  const offset = (page - 1) * limit;
+  try {
+    const [{ rows: [{ total }] }, { rows: clientes }] = await Promise.all([
+      db.query(`SELECT COUNT(*) AS total FROM clientes_evobike WHERE deleted_at IS NULL`),
+      db.query(
+        `SELECT id, nombre, apellido, email, telefono, ciudad, estado,
+                total_pedido, mp_status,
+                TO_CHAR(created_at, 'DD/MM/YYYY') AS created_at
+         FROM clientes_evobike
+         WHERE deleted_at IS NULL
+         ORDER BY created_at DESC
+         LIMIT $1 OFFSET $2`,
+        [limit, offset]
+      )
+    ]);
+    res.json({ data: clientes, total: parseInt(total), page, limit });
+  } catch (err) {
+    console.error('GET /api/admin/clientes:', err.message);
+    res.status(500).json({ error: 'Error al obtener clientes' });
+  }
+});
+
+// GET /api/admin/clientes/:id — Detalle de un cliente
+app.get('/api/admin/clientes/:id', async (req, res) => {
+  try {
+    const { rows } = await db.query(
+      `SELECT *, TO_CHAR(created_at, 'DD/MM/YYYY HH24:MI') AS fecha_compra
+       FROM clientes_evobike WHERE id = $1 AND deleted_at IS NULL`,
+      [req.params.id]
+    );
+    if (rows.length === 0) return res.status(404).json({ error: 'Cliente no encontrado' });
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: 'Error al obtener cliente' });
+  }
+});
+
+// GET /api/admin/usuarios — Lista todos los usuarios (sin eliminados)
+
+app.get('/api/admin/usuarios', async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT id, nombre, usuario, correo, rol,
+              TO_CHAR(created_at, 'DD/MM/YYYY') AS created_at
+       FROM admin_usuarios
+       WHERE deleted_at IS NULL
+       ORDER BY created_at DESC`
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('GET /api/admin/usuarios error:', err.message);
+    res.status(500).json({ error: 'Error al obtener usuarios' });
+  }
+});
+
+// GET /api/admin/usuarios/:id — Un usuario para editar
+app.get('/api/admin/usuarios/:id', async (req, res) => {
+  try {
+    const { rows } = await db.query(
+      `SELECT id, nombre, usuario, correo, rol FROM admin_usuarios WHERE id = $1 AND deleted_at IS NULL`,
+      [req.params.id]
+    )
+    if (rows.length === 0) return res.status(404).json({ error: 'Usuario no encontrado' })
+    res.json(rows[0])
+  } catch (err) {
+    res.status(500).json({ error: 'Error al obtener usuario' })
+  }
+})
+
+// POST /api/admin/usuarios — Crear nuevo usuario
+
+app.post('/api/admin/usuarios', async (req, res) => {
+  const { nombre, correo, usuario, rol, password } = req.body;
+  if (!nombre || !correo || !usuario || !password) {
+    return res.status(400).json({ error: 'Faltan campos obligatorios' });
+  }
+  try {
+    const hash = await bcrypt.hash(password, 10);
+    const result = await db.query(
+      `INSERT INTO admin_usuarios (nombre, correo, usuario, rol, password)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id, nombre, usuario, correo, rol,
+                 TO_CHAR(created_at, 'DD/MM/YYYY') AS created_at`,
+      [nombre, correo, usuario, rol || 'Tienda', hash]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    if (err.code === '23505') {
+      return res.status(409).json({ error: 'El correo o usuario ya existe' });
+    }
+    console.error('POST /api/admin/usuarios error:', err.message);
+    res.status(500).json({ error: 'Error al crear usuario' });
+  }
+});
+
+// PUT /api/admin/usuarios/:id — Editar usuario
+app.put('/api/admin/usuarios/:id', async (req, res) => {
+  const { id } = req.params;
+  const { nombre, correo, usuario, rol } = req.body;
+  try {
+    const result = await db.query(
+      `UPDATE admin_usuarios
+       SET nombre = COALESCE($1, nombre),
+           correo = COALESCE($2, correo),
+           usuario = COALESCE($3, usuario),
+           rol    = COALESCE($4, rol),
+           edited_at = NOW()
+       WHERE id = $5 AND deleted_at IS NULL
+       RETURNING id, nombre, usuario, correo, rol,
+                 TO_CHAR(created_at, 'DD/MM/YYYY') AS created_at`,
+      [nombre, correo, usuario, rol, id]
+    );
+    if (result.rowCount === 0) return res.status(404).json({ error: 'Usuario no encontrado' });
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('PUT /api/admin/usuarios error:', err.message);
+    res.status(500).json({ error: 'Error al actualizar usuario' });
+  }
+});
+
+// DELETE /api/admin/usuarios/:id — Soft delete
+app.delete('/api/admin/usuarios/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await db.query(
+      `UPDATE admin_usuarios SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL`,
+      [id]
+    );
+    if (result.rowCount === 0) return res.status(404).json({ error: 'Usuario no encontrado' });
+    res.json({ message: 'Usuario eliminado correctamente' });
+  } catch (err) {
+    console.error('DELETE /api/admin/usuarios error:', err.message);
+    res.status(500).json({ error: 'Error al eliminar usuario' });
+  }
+});
+
 if (process.env.NODE_ENV !== "production") {
   const PORT = process.env.PORT || 3001;
   app.listen(PORT, () =>
@@ -649,3 +967,4 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 module.exports = app;
+
