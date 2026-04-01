@@ -7,7 +7,7 @@
       <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
         <div>
           <div class="flex items-center gap-3 mb-1">
-            <router-link to="/admin/clientes" class="text-gray-400 hover:text-gray-600">
+            <router-link to="/admin/pedidos" class="text-gray-400 hover:text-gray-600">
                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7 7-7" />
                </svg>
@@ -22,9 +22,7 @@
         <div class="flex items-center gap-3">
            <span :class="[
             'px-4 py-1.5 rounded-full font-bold text-sm border shadow-sm',
-            pedido.mp_status === 'approved' || pedido.mp_status === 'in_process'
-              ? 'bg-success-50 text-success-700 border-success-200 dark:bg-success-500/10 dark:text-success-400 dark:border-success-500/20'
-              : 'bg-error-50 text-error-700 border-error-200 dark:bg-error-500/10 dark:text-error-400 dark:border-error-500/20'
+            statusColor(pedido.mp_status)
           ]">
             {{ statusLabel(pedido.mp_status) }}
           </span>
@@ -32,129 +30,115 @@
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <!-- Columna Izquierda: Productos e Info de Cliente -->
+        <!-- Columna Izquierda (2/3): Datos del Cliente -->
         <div class="lg:col-span-2 space-y-8">
-          
-          <!-- Productos -->
-          <div class="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
-            <div class="p-6 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-              <h3 class="font-bold text-gray-800 dark:text-white/90">Productos del Pedido</h3>
-              <span class="text-gray-500 text-sm">{{ pedido.carrito?.length || 0 }} artículos</span>
+          <div class="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 p-8 shadow-sm">
+            <h3 class="font-bold text-xl text-gray-800 dark:text-white/90 mb-6 flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              Información del Cliente
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+              <div>
+                <p class="text-xs text-gray-400 uppercase tracking-wider font-bold mb-1">Nombre</p>
+                <p class="text-gray-700 dark:text-gray-200 text-lg">{{ pedido.nombre }} {{ pedido.apellido }}</p>
+              </div>
+              <div>
+                <p class="text-xs text-gray-400 uppercase tracking-wider font-bold mb-1">Correo Electrónico</p>
+                <p class="text-brand-500 dark:text-brand-400 text-lg font-medium">{{ pedido.email }}</p>
+              </div>
+              <div>
+                <p class="text-xs text-gray-400 uppercase tracking-wider font-bold mb-1">Teléfono</p>
+                <p class="text-gray-700 dark:text-gray-200 text-lg">{{ pedido.telefono || 'N/A' }}</p>
+              </div>
+              <div>
+                <p class="text-xs text-gray-400 uppercase tracking-wider font-bold mb-1">Dirección</p>
+                <p class="text-gray-700 dark:text-gray-200 text-lg">{{ pedido.direccion }}</p>
+              </div>
+              <div>
+                <p class="text-xs text-gray-400 uppercase tracking-wider font-bold mb-1">Ciudad</p>
+                <p class="text-gray-700 dark:text-gray-200 text-lg">{{ pedido.ciudad }}</p>
+              </div>
+              <div>
+                <p class="text-xs text-gray-400 uppercase tracking-wider font-bold mb-1">Estado</p>
+                <p class="text-gray-700 dark:text-gray-200 text-lg">{{ pedido.estado }}</p>
+              </div>
+              <div>
+                <p class="text-xs text-gray-400 uppercase tracking-wider font-bold mb-1">Código Postal</p>
+                <p class="text-gray-700 dark:text-gray-200 text-lg">{{ pedido.codigo_postal }}</p>
+              </div>
+            </div>
+
+            <!-- Selector de Estado -->
+            <div class="mt-10 pt-8 border-t border-gray-100 dark:border-gray-800">
+              <label class="block text-xs text-gray-400 uppercase tracking-wider font-bold mb-3">Cambiar Estado del Pedido</label>
+              <div class="flex items-center gap-4">
+                <select 
+                  v-model="newStatus" 
+                  class="w-full max-w-xs rounded-lg border-gray-200 bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-white px-4 py-2.5 focus:border-brand-500 focus:ring-brand-500 shadow-sm"
+                >
+                  <option value="approved">En Proceso</option>
+                  <option value="completed">Completado</option>
+                  <option value="rejected">Fallido</option>
+                </select>
+                <button 
+                  @click="updateStatus" 
+                  :disabled="updating"
+                  class="bg-brand-500 hover:bg-brand-600 disabled:bg-gray-400 text-white px-6 py-2.5 rounded-lg font-bold transition shadow-sm flex items-center gap-2"
+                >
+                  <span v-if="updating">Actualizando...</span>
+                  <span v-else>Guardar Estado</span>
+                </button>
+              </div>
+              <p v-if="successMsg" class="mt-2 text-success-600 text-sm font-medium">{{ successMsg }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Columna Derecha (1/3): Sumario del pedido -->
+        <div class="lg:col-span-1">
+          <div class="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm sticky top-8">
+            <div class="p-6 border-b border-gray-100 dark:border-gray-800">
+              <h3 class="font-bold text-gray-800 dark:text-white/90">Sumario del Pedido</h3>
             </div>
             
             <div class="p-6">
               <div class="divide-y divide-gray-100 dark:divide-gray-800">
-                <div v-for="item in pedido.carrito" :key="item.id" class="py-4 flex gap-4 items-center first:pt-0 last:pb-0">
-                  <div class="h-16 w-16 bg-gray-50 dark:bg-gray-800 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0 border border-gray-100 dark:border-gray-800">
-                    <!-- Si tuviéramos imagen del producto se pondría aquí -->
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                  </div>
+                <div v-for="item in pedido.carrito" :key="item.id" class="py-4 flex gap-3 items-start first:pt-0">
                   <div class="flex-1">
-                    <h4 class="font-medium text-gray-800 dark:text-white/90 text-theme-sm">{{ item.name }}</h4>
-                    <p class="text-gray-500 text-theme-xs">Cantidad: {{ item.quantity }}</p>
+                    <h4 class="font-medium text-gray-800 dark:text-white/90 text-sm">{{ item.name }}</h4>
+                    <p class="text-gray-500 text-xs mt-0.5">x{{ item.quantity }} unidades</p>
                   </div>
                   <div class="text-right">
                     <p class="font-bold text-gray-800 dark:text-white/90 text-sm">
                       ${{ (item.price * item.quantity).toLocaleString('es-MX', { minimumFractionDigits: 2 }) }}
                     </p>
-                    <p v-if="item.quantity > 1" class="text-gray-400 text-theme-xs">${{ Number(item.price).toLocaleString('es-MX') }} c/u</p>
                   </div>
                 </div>
               </div>
             </div>
             
-            <div class="bg-gray-50 dark:bg-gray-900/50 p-6 space-y-3">
-               <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400">
+            <div class="bg-gray-50 dark:bg-gray-900/50 p-6 space-y-4">
+               <div class="flex justify-between text-sm text-gray-500">
                  <span>Subtotal</span>
-                 <span>${{ (pedido.total_pedido - (pedido.envio_costo || 0)).toLocaleString('es-MX', { minimumFractionDigits: 2 }) }}</span>
+                 <span class="text-gray-800 dark:text-white">${{ (pedido.total_pedido - (pedido.envio_costo || 0)).toLocaleString('es-MX', { minimumFractionDigits: 2 }) }}</span>
                </div>
-               <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400">
+               <div class="flex justify-between text-sm text-gray-500">
                  <span>Envío</span>
-                 <span>{{ pedido.envio_costo > 0 ? '$' + pedido.envio_costo.toLocaleString('es-MX') : 'Gratis' }}</span>
+                 <span class="text-gray-800 dark:text-white">{{ pedido.envio_costo > 0 ? '$' + pedido.envio_costo.toLocaleString('es-MX') : '$0.00' }}</span>
                </div>
-               <div class="flex justify-between pt-3 border-t border-gray-200 dark:border-gray-700 text-lg font-bold text-gray-800 dark:text-white">
-                 <span>Total</span>
+               <div class="flex justify-between pt-4 border-t border-gray-200 dark:border-gray-700 text-xl font-black text-gray-900 dark:text-white">
+                 <span>TOTAL</span>
                  <span class="text-brand-500">${{ Number(pedido.total_pedido).toLocaleString('es-MX', { minimumFractionDigits: 2 }) }}</span>
                </div>
             </div>
-          </div>
-        </div>
 
-        <!-- Columna Derecha: Datos del Cliente -->
-        <div class="space-y-8">
-          <div class="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 p-6 shadow-sm">
-            <h3 class="font-bold text-gray-800 dark:text-white/90 mb-5 flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-              Cliente
-            </h3>
-            
-            <div class="space-y-4">
-              <div>
-                <p class="text-theme-xs text-gray-500 mb-1 uppercase tracking-wider font-semibold">Nombre Completo</p>
-                <p class="text-gray-800 dark:text-white/90 font-medium">{{ pedido.nombre }} {{ pedido.apellido }}</p>
-              </div>
-              <div>
-                <p class="text-theme-xs text-gray-500 mb-1 uppercase tracking-wider font-semibold">Correo Electrónico</p>
-                <a :href="'mailto:' + pedido.email" class="text-brand-500 hover:underline">{{ pedido.email }}</a>
-              </div>
-              <div>
-                <p class="text-theme-xs text-gray-500 mb-1 uppercase tracking-wider font-semibold">Teléfono</p>
-                <p class="text-gray-800 dark:text-white/90 border border-transparent">{{ pedido.telefono || 'No proporcionado' }}</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 p-6 shadow-sm font-medium">
-            <h3 class="font-bold text-gray-800 dark:text-white/90 mb-5 flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              Envío y Entrega
-            </h3>
-            
-            <div class="space-y-4">
-              <div>
-                <p class="text-theme-xs text-gray-500 mb-1 uppercase tracking-wider font-semibold">Dirección</p>
-                <p class="text-gray-800 dark:text-white/90 leading-relaxed">{{ pedido.direccion }}</p>
-              </div>
-              <div class="grid grid-cols-2 gap-4">
-                <div>
-                  <p class="text-theme-xs text-gray-500 mb-1 uppercase tracking-wider font-semibold">Ciudad</p>
-                  <p class="text-gray-800 dark:text-white/90">{{ pedido.ciudad }}</p>
-                </div>
-                <div>
-                  <p class="text-theme-xs text-gray-500 mb-1 uppercase tracking-wider font-semibold">C.P.</p>
-                  <p class="text-gray-800 dark:text-white/90">{{ pedido.codigo_postal }}</p>
-                </div>
-              </div>
-              <div>
-                <p class="text-theme-xs text-gray-500 mb-1 uppercase tracking-wider font-semibold">Estado</p>
-                <p class="text-gray-800 dark:text-white/90">{{ pedido.estado }}</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 p-6 shadow-sm">
-             <h3 class="font-bold text-gray-800 dark:text-white/90 mb-5 flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-              </svg>
-              Pago
-            </h3>
-            <div class="space-y-3">
-              <div class="flex justify-between items-center text-sm">
-                <span class="text-gray-500">Mercado Pago ID</span>
-                <span class="font-mono text-gray-800 dark:text-white/90 text-theme-xs">{{ pedido.mp_payment_id || 'N/A' }}</span>
-              </div>
-              <div class="flex justify-between items-center text-sm">
-                <span class="text-gray-500">Estatus Interno</span>
-                <span class="font-bold text-gray-800 dark:text-white/90">{{ pedido.mp_status }}</span>
-              </div>
+            <!-- ID Pago -->
+            <div class="p-6 border-t border-gray-100 dark:border-gray-800 text-center">
+              <p class="text-xs text-gray-400 uppercase font-bold mb-1">Referencia Mercado Pago</p>
+              <p class="font-mono text-gray-500 text-xs">{{ pedido.mp_payment_id || 'SIN REFERENCIA' }}</p>
             </div>
           </div>
         </div>
@@ -164,7 +148,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AdminLayout from '../../components/layout/AdminLayout.vue'
 
@@ -196,11 +180,21 @@ interface Pedido {
 const route = useRoute()
 const pedido = ref<Pedido | null>(null)
 const loading = ref(true)
+const updating = ref(false)
 const error = ref('')
+const successMsg = ref('')
+const newStatus = ref('approved')
 
 const statusLabel = (status: string) => {
   if (status === 'approved' || status === 'in_process') return 'En proceso'
+  if (status === 'completed') return 'Completado'
   return 'Fallido'
+}
+
+const statusColor = (status: string) => {
+  if (status === 'approved' || status === 'in_process') return 'bg-success-50 text-success-700 border-success-200 dark:bg-success-500/10 dark:text-success-400 dark:border-success-500/20'
+  if (status === 'completed') return 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20'
+  return 'bg-error-50 text-error-700 border-error-200 dark:bg-error-500/10 dark:text-error-400 dark:border-error-500/20'
 }
 
 const fetchPedido = async () => {
@@ -208,11 +202,35 @@ const fetchPedido = async () => {
   try {
     const res = await fetch(`http://localhost:3001/api/admin/clientes/${route.params.id}`)
     if (!res.ok) throw new Error('No se encontró el pedido')
-    pedido.value = await res.json()
+    const data = await res.json()
+    pedido.value = data
+    newStatus.value = data.mp_status
   } catch (err: unknown) {
     error.value = err instanceof Error ? err.message : 'Error desconocido'
   } finally {
     loading.value = false
+  }
+}
+
+const updateStatus = async () => {
+  if (!pedido.value) return
+  updating.value = true
+  successMsg.value = ''
+  try {
+    const res = await fetch(`http://localhost:3001/api/admin/clientes/${pedido.value.id}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus.value })
+    })
+    if (!res.ok) throw new Error('Error al actualizar el estado')
+    
+    pedido.value.mp_status = newStatus.value
+    successMsg.value = 'Estado actualizado correctamente'
+    setTimeout(() => { successMsg.value = '' }, 3000)
+  } catch (err: any) {
+    alert(err.message)
+  } finally {
+    updating.value = false
   }
 }
 

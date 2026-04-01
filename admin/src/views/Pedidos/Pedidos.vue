@@ -2,14 +2,14 @@
   <AdminLayout>
     <div>
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
-        <h2 class="text-xl font-bold text-gray-800 dark:text-white/90">Clientes</h2>
+        <h2 class="text-xl font-bold text-gray-800 dark:text-white/90">Pedidos</h2>
         <div class="text-sm text-gray-500 dark:text-gray-400">
           Total: <span class="font-semibold text-gray-700 dark:text-gray-300">{{ total }}</span>
         </div>
       </div>
 
       <!-- Loading / Error -->
-      <div v-if="loading" class="text-center py-12 text-gray-400 text-sm">Cargando clientes...</div>
+      <div v-if="loading" class="text-center py-12 text-gray-400 text-sm">Cargando pedidos...</div>
       <div v-else-if="error" class="rounded-lg bg-error-50 border border-error-100 px-4 py-3 text-sm text-error-700 mb-4 dark:bg-error-500/10 dark:border-error-500/20 dark:text-error-400">
         {{ error }}
       </div>
@@ -19,45 +19,57 @@
           <table class="min-w-full">
             <thead>
               <tr class="border-b border-gray-200 dark:border-gray-700">
-                <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Nombre</p></th>
-                <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Teléfono</p></th>
-                <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Correo</p></th>
-                <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Ciudad/Estado</p></th>
-                <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Ultima Compra</p></th>
+                <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">#Pedido</p></th>
+                <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Cliente</p></th>
+                <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Total</p></th>
+                <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Fecha</p></th>
+                <th class="px-5 py-3 text-left sm:px-6"><p class="font-medium text-gray-500 text-theme-xs dark:text-gray-400">Estado</p></th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
               <tr
-                v-for="cliente in displayClientes"
-                :key="cliente.id"
+                v-for="pedido in pedidos"
+                :key="pedido.id"
                 class="hover:bg-gray-50 dark:hover:bg-white/[0.02] transition cursor-pointer"
-                @click="verDetalle(cliente.id)"
+                @click="verDetalle(pedido.id)"
               >
+                <td class="px-5 py-4 sm:px-6">
+                  <span class="font-bold text-gray-800 text-theme-sm dark:text-white/90">
+                    #{{ String(pedido.id).padStart(5, '0') }}
+                  </span>
+                </td>
                 <td class="px-5 py-4 sm:px-6">
                   <div class="flex items-center gap-3">
                     <div class="h-9 w-9 rounded-full bg-brand-100 dark:bg-brand-500/20 flex items-center justify-center text-brand-600 dark:text-brand-400 font-semibold text-sm uppercase flex-shrink-0">
-                      {{ (cliente.nombre || 'U').charAt(0) }}
+                      {{ (pedido.nombre || 'U').charAt(0) }}
                     </div>
-                    <span class="block font-medium text-gray-800 text-theme-sm dark:text-white/90">{{ cliente.nombre }} {{ cliente.apellido }}</span>
+                    <div>
+                      <span class="block font-medium text-gray-800 text-theme-sm dark:text-white/90">{{ pedido.nombre }} {{ pedido.apellido }}</span>
+                      <span class="block text-gray-500 text-theme-xs">{{ pedido.email }}</span>
+                    </div>
                   </div>
                 </td>
                 <td class="px-5 py-4 sm:px-6">
-                  <p class="text-gray-500 text-theme-sm dark:text-gray-400">{{ cliente.telefono || 'N/A' }}</p>
-                </td>
-                <td class="px-5 py-4 sm:px-6">
-                  <p class="text-gray-500 text-theme-sm dark:text-gray-400">{{ cliente.email }}</p>
-                </td>
-                <td class="px-5 py-4 sm:px-6">
-                  <p class="text-gray-500 text-theme-sm dark:text-gray-400">
-                    {{ cliente.ciudad }}{{ cliente.estado ? `, ${cliente.estado}` : '' }}
+                  <p class="font-semibold text-gray-800 text-theme-sm dark:text-white/90">
+                    ${{ Number(pedido.total_pedido || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 }) }}
                   </p>
                 </td>
                 <td class="px-5 py-4 sm:px-6">
-                  <p class="text-gray-500 text-theme-sm dark:text-gray-400">{{ cliente.created_at }}</p>
+                  <p class="text-gray-500 text-theme-sm dark:text-gray-400">{{ pedido.created_at }}</p>
+                </td>
+                <td class="px-5 py-4 sm:px-6">
+                  <span :class="[
+                    'rounded-full px-2.5 py-0.5 text-theme-xs font-medium border',
+                    pedido.mp_status === 'approved' || pedido.mp_status === 'in_process'
+                      ? 'bg-success-50 text-success-700 border-success-100 dark:bg-success-500/15 dark:text-success-500 dark:border-success-500/20'
+                      : 'bg-error-50 text-error-700 border-error-100 dark:bg-error-500/15 dark:text-error-500 dark:border-error-500/20'
+                  ]">
+                    {{ statusLabel(pedido.mp_status) }}
+                  </span>
                 </td>
               </tr>
-              <tr v-if="displayClientes.length === 0">
-                <td colspan="5" class="px-5 py-12 text-center text-gray-400 text-theme-sm dark:text-gray-500">Sin clientes registrados aún.</td>
+              <tr v-if="pedidos.length === 0">
+                <td colspan="5" class="px-5 py-12 text-center text-gray-400 text-theme-sm dark:text-gray-500">Sin pedidos registrados aún.</td>
               </tr>
             </tbody>
           </table>
@@ -66,7 +78,7 @@
         <!-- Paginación -->
         <div v-if="total > 0" class="flex flex-col sm:flex-row items-center justify-between border-t border-gray-200 px-6 py-4 gap-4 dark:border-gray-800">
           <p class="text-sm text-gray-500 dark:text-gray-400">
-            Mostrando {{ (currentPage - 1) * limit + 1 }}–{{ Math.min(currentPage * limit, total) }} de {{ total }} clientes
+            Mostrando {{ (currentPage - 1) * limit + 1 }}–{{ Math.min(currentPage * limit, total) }} de {{ total }} pedidos
           </p>
           <div class="flex items-center gap-1">
             <button @click="cambiarPagina(currentPage - 1)" :disabled="currentPage === 1"
@@ -98,61 +110,46 @@ const router = useRouter()
 const API = 'http://localhost:3001/api/admin/clientes'
 const limit = 10
 
-interface Cliente {
+interface Pedido {
   id: number
   nombre: string
   apellido: string
   email: string
-  telefono: string
-  ciudad: string
-  estado: string
   total_pedido: number
   mp_status: string
   created_at: string
 }
 
-const exampleData: Cliente[] = [
-  { id: 1001, nombre: 'Ana', apellido: 'García', email: 'ana@ejemplo.com', telefono: '3312345678', ciudad: 'Guadalajara', estado: 'Jalisco', total_pedido: 1500, mp_status: 'approved', created_at: '01/04/2024' },
-  { id: 1002, nombre: 'Luis', apellido: 'Martínez', email: 'luis@ejemplo.com', telefono: '5587654321', ciudad: 'CDMX', estado: 'Estado de México', total_pedido: 2400, mp_status: 'approved', created_at: '31/03/2024' },
-  { id: 1003, nombre: 'Elena', apellido: 'Pérez', email: 'elena@ejemplo.com', telefono: '4431223344', ciudad: 'Morelia', estado: 'Michoacán', total_pedido: 12000, mp_status: 'in_process', created_at: '30/03/2024' },
-  { id: 1004, nombre: 'Roberto', apellido: 'Sánchez', email: 'roberto@ejemplo.com', telefono: '8112348899', ciudad: 'Monterrey', estado: 'Nuevo León', total_pedido: 580, mp_status: 'approved', created_at: '29/03/2024' },
-  { id: 1005, nombre: 'Claudia', apellido: 'Ruiz', email: 'claudia@ejemplo.com', telefono: '9995554433', ciudad: 'Mérida', estado: 'Yucatán', total_pedido: 3500, mp_status: 'approved', created_at: '28/03/2024' }
-]
-
-const clientes = ref<Cliente[]>([])
+const pedidos = ref<Pedido[]>([])
 const total = ref(0)
 const currentPage = ref(1)
 const loading = ref(true)
 const error = ref('')
 
-// Combinamos datos reales con ejemplos si estamos en la primera página
-const displayClientes = computed(() => {
-  if (currentPage.value === 1 && clientes.value.length === 0) return exampleData
-  return clientes.value
-})
-
 const totalPages = computed(() => Math.max(1, Math.ceil(total.value / limit)))
 
-const verDetalle = (id: number) => {
-  if (id > 1000) return // Evitar entrar a detalle de ejemplos hardcoded
-  router.push(`/admin/clientes/${id}`)
+const statusLabel = (status: string) => {
+  if (status === 'approved' || status === 'in_process') return 'En proceso'
+  if (status === 'completed') return 'Completado'
+  return 'Fallido'
 }
 
-const fetchClientes = async (page = 1) => {
+const verDetalle = (id: number) => {
+  router.push(`/admin/pedidos/${id}`)
+}
+
+const fetchPedidos = async (page = 1) => {
   loading.value = true
   error.value = ''
   try {
     const res = await fetch(`${API}?page=${page}&limit=${limit}`)
     if (!res.ok) throw new Error()
     const json = await res.json()
-    clientes.value = json.data
-    total.value = json.total || exampleData.length
+    pedidos.value = json.data
+    total.value = json.total
     currentPage.value = json.page
   } catch {
-    // Si falla la API mostramos los ejemplos
-    clientes.value = []
-    total.value = exampleData.length
-    currentPage.value = 1
+    error.value = 'No se pudieron cargar los pedidos. Verifica que el servidor esté activo.'
   } finally {
     loading.value = false
   }
@@ -160,8 +157,8 @@ const fetchClientes = async (page = 1) => {
 
 const cambiarPagina = (p: number) => {
   if (p < 1 || p > totalPages.value) return
-  fetchClientes(p)
+  fetchPedidos(p)
 }
 
-onMounted(() => fetchClientes(1))
+onMounted(() => fetchPedidos(1))
 </script>

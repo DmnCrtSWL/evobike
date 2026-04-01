@@ -860,6 +860,23 @@ app.get('/api/admin/clientes/:id', async (req, res) => {
   }
 });
 
+// PATCH /api/admin/clientes/:id/status — Actualizar el estado de un pedido
+app.patch('/api/admin/clientes/:id/status', async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body; // 'approved', 'completed', 'rejected'
+  try {
+    const result = await db.query(
+      `UPDATE clientes_evobike SET mp_status = $1 WHERE id = $2 RETURNING id, mp_status`,
+      [status, id]
+    );
+    if (result.rowCount === 0) return res.status(404).json({ error: 'Pedido no encontrado' });
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('PATCH /api/admin/clientes status:', err.message);
+    res.status(500).json({ error: 'Error al actualizar estado' });
+  }
+});
+
 // GET /api/admin/usuarios — Lista todos los usuarios (sin eliminados)
 
 app.get('/api/admin/usuarios', async (req, res) => {

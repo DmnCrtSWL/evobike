@@ -59,17 +59,23 @@ const router = createRouter({
     },
     {
       path: '/admin/clientes/:id',
-      name: 'PedidoDetalle',
+      name: 'ClienteDetalle',
       component: () => import('../views/Clientes/PedidoDetalle.vue'),
-      meta: { title: 'Detalle de Pedido' },
+      meta: { title: 'Detalle de Cliente' },
     },
     {
       path: '/admin/pedidos',
       name: 'Pedidos',
-      component: () => import('../views/Pages/BlankPage.vue'),
+      component: () => import('../views/Pedidos/Pedidos.vue'),
       meta: {
         title: 'Pedidos',
       },
+    },
+    {
+      path: '/admin/pedidos/:id',
+      name: 'PedidoDetalle',
+      component: () => import('../views/Clientes/PedidoDetalle.vue'),
+      meta: { title: 'Detalle de Pedido' },
     },
     {
       path: '/signin',
