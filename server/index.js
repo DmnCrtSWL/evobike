@@ -8,7 +8,12 @@ const { Pool } = require("pg");
 const { MercadoPagoConfig, Payment } = require("mercadopago");
 
 const app = express();
-app.use(cors());
+// Configurar CORS para permitir peticiones desde cualquier origen (especialmente el admin)
+app.use(cors({
+  origin: "*",
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
 app.use(express.json());
 
 const WC_URL = process.env.VITE_WC_URL || "https://tu-tienda.com";
