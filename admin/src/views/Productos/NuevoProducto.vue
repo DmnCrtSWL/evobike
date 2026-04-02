@@ -265,7 +265,9 @@ import AdminLayout from '../../components/layout/AdminLayout.vue'
 const router = useRouter()
 const route = useRoute()
 const modoEdicion = computed(() => !!route.params.id)
-const API = 'http://localhost:3001/api/admin/productos'
+import { API_URL } from '../../services/api'
+
+const API = `${API_URL}/api/admin/productos`
 
 const categoriasDisponibles = [
   'BICICLETAS ELÉCTRICAS',

@@ -68,6 +68,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { API_URL } from '../../services/api'
 
 const pedidos = ref([])
 
@@ -85,7 +86,7 @@ const statusColor = (status) => {
 
 const fetchRecentOrders = async () => {
   try {
-    const res = await fetch('http://localhost:3001/api/admin/pedidos?limit=5')
+    const res = await fetch(`${API_URL}/api/admin/pedidos?limit=5`)
     if (res.ok) {
       const json = await res.json()
       pedidos.value = json.data

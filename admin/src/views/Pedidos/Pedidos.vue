@@ -107,7 +107,9 @@ import AdminLayout from '../../components/layout/AdminLayout.vue'
 
 const router = useRouter()
 
-const API = 'http://localhost:3001/api/admin/pedidos'
+import { API_URL } from '../../services/api'
+
+const API = `${API_URL}/api/admin/pedidos`
 const limit = 10
 
 interface Pedido {

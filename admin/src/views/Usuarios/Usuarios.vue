@@ -99,7 +99,9 @@
 import { ref, onMounted } from 'vue'
 import AdminLayout from '../../components/layout/AdminLayout.vue'
 
-const API = 'http://localhost:3001/api/admin/usuarios'
+import { API_URL } from '../../services/api'
+
+const API = `${API_URL}/api/admin/usuarios`
 
 interface AdminUser {
   id: number

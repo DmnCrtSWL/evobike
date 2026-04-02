@@ -102,7 +102,9 @@ import AdminLayout from '../../components/layout/AdminLayout.vue'
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 
-const API = 'http://localhost:3001/api/admin/usuarios'
+import { API_URL } from '../../services/api'
+
+const API = `${API_URL}/api/admin/usuarios`
 const router = useRouter()
 const route = useRoute()
 
