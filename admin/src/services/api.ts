@@ -23,10 +23,11 @@ export async function fetchWithAuth(endpoint: string, options: RequestInit = {})
   })
 
   if (response.status === 401) {
-    // Si el token expiró o es inválido, limpiamos y mandamos al login desde aquí
+    console.error('Sesión inválida o expirada. Redirigiendo al login...')
     localStorage.removeItem('admin_token')
     localStorage.removeItem('admin_user')
-    window.location.href = '/login'
+    // Usar replace para evitar que el botón "Atrás" te regrese a una página rota
+    window.location.replace('/login')
     throw new Error('Sesión expirada')
   }
 

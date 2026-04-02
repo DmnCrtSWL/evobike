@@ -8,7 +8,9 @@ const { Pool } = require("pg");
 const { MercadoPagoConfig, Payment } = require("mercadopago");
 
 const app = express();
-// Configurar CORS para permitir peticiones desde cualquier origen (especialmente el admin)
+const JWT_SECRET = process.env.JWT_SECRET || "evobike_secret_2024";
+
+// Configurar CORS y JSON
 app.use(cors({
   origin: "*",
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
@@ -16,52 +18,9 @@ app.use(cors({
 }));
 app.use(express.json());
 
-const WC_URL = process.env.VITE_WC_URL || "https://tu-tienda.com";
-const WC_KEY = process.env.VITE_WC_CONSUMER_KEY || "";
-const WC_SECRET = process.env.VITE_WC_CONSUMER_SECRET || "";
-const JWT_SECRET = process.env.JWT_SECRET || "evobike_secret_2024";
-
-// Endpoint Proxy de Imágenes para evitar bloqueos por CORS o SSL de Plesk
-app.get("/api/image-proxy", async (req, res) => {
-  try {
-    const imageUrl = req.query.url;
-    if (!imageUrl) return res.status(400).send("URL required");
-    
-    const response = await axios({
-      method: "GET",
-      url: imageUrl,
-      responseType: "stream",
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-      }
-    });
-
-    res.set("Content-Type", response.headers["content-type"]);
-    res.set("Cache-Control", "public, max-age=86400");
-    response.data.pipe(res);
-  } catch (error) {
-    console.error("Image proxy error:", error.message);
-    res.status(500).send("Proxy error");
-  }
-});
-
-// Conexión a Neon PostgreSQL
-const db = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_VGpZrwP70vJk@ep-shy-lab-amyh5564-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require',
-  ssl: { rejectUnauthorized: false }
-});
-
-// Middleware para verificar JWT Clientes
-const authMiddleware = (req, res, next) => {
-  const auth = req.headers.authorization;
-  if (!auth || !auth.startsWith('Bearer ')) return res.status(401).json({ error: 'No autorizado' });
-  try {
-    req.cliente = jwt.verify(auth.split(' ')[1], JWT_SECRET);
-    next();
-  } catch {
-    res.status(401).json({ error: 'Token inválido o expirado' });
-  }
-};
+// ─────────────────────────────────────────────
+// MIDDLEWARES DE SEGURIDAD
+// ─────────────────────────────────────────────
 
 // Middleware para verificar JWT Admin
 const adminAuthMiddleware = (req, res, next) => {
@@ -77,7 +36,58 @@ const adminAuthMiddleware = (req, res, next) => {
   }
 };
 
-// Configurar Mercado Pago
+// Middleware para verificar JWT Clientes
+const authMiddleware = (req, res, next) => {
+  const auth = req.headers.authorization;
+  if (!auth || !auth.startsWith('Bearer ')) return res.status(401).json({ error: 'No autorizado' });
+  try {
+    req.cliente = jwt.verify(auth.split(' ')[1], JWT_SECRET);
+    next();
+  } catch {
+    res.status(401).json({ error: 'Token inválido o expirado' });
+  }
+};
+
+// ─────────────────────────────────────────────
+// RUTAS PÚBLICAS ADMIN
+// ─────────────────────────────────────────────
+
+app.post('/api/admin/login', async (req, res) => {
+  const { correo, password } = req.body;
+  if (!correo || !password) return res.status(400).json({ error: 'Correo y contraseña requeridos' });
+  try {
+    const { rows } = await db.query(
+      "SELECT * FROM admin_usuarios WHERE correo = $1 AND deleted_at IS NULL",
+      [correo.toLowerCase()]
+    );
+    if (rows.length === 0) return res.status(401).json({ error: "Usuario no encontrado" });
+    const user = rows[0];
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) return res.status(401).json({ error: "Contraseña incorrecta" });
+    const token = jwt.sign({ id: user.id, usuario: user.usuario, rol: user.rol }, JWT_SECRET, { expiresIn: '8h' });
+    res.json({ token, user: { id: user.id, nombre: user.nombre, usuario: user.usuario, rol: user.rol } });
+  } catch (err) {
+    console.error('Admin Login Error:', err.message);
+    res.status(500).json({ error: "Error en el servidor durante el login" });
+  }
+});
+
+// Proteger todas las rutas administrativas siguientes
+app.use('/api/admin', adminAuthMiddleware);
+
+// ─────────────────────────────────────────────
+// CONFIGURACIÓN Y CONEXIONES
+// ─────────────────────────────────────────────
+
+const WC_URL = process.env.VITE_WC_URL || "https://tu-tienda.com";
+const WC_KEY = process.env.VITE_WC_CONSUMER_KEY || "";
+const WC_SECRET = process.env.VITE_WC_CONSUMER_SECRET || "";
+
+const db = new Pool({
+  connectionString: process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_VGpZrwP70vJk@ep-shy-lab-amyh5564-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require',
+  ssl: { rejectUnauthorized: false }
+});
+
 const client = new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN || "TEST" });
 
 // Helper para mapear producto de DB al formato que espera el frontend
@@ -325,31 +335,6 @@ app.post("/api/process_payment", async (req, res) => {
 // ─────────────────────────────────────────────
 // MÓDULO DE CLIENTES
 // ─────────────────────────────────────────────
-
-// POST /api/admin/login — Login administrativo (con correo)
-app.post('/api/admin/login', async (req, res) => {
-  const { correo, password } = req.body;
-  if (!correo || !password) return res.status(400).json({ error: 'Correo y contraseña requeridos' });
-
-  try {
-    const { rows } = await db.query(
-      "SELECT * FROM admin_usuarios WHERE correo = $1 AND deleted_at IS NULL",
-      [correo.toLowerCase()]
-    );
-    if (rows.length === 0) return res.status(401).json({ error: "Usuario no encontrado" });
-    const user = rows[0];
-    const match = await bcrypt.compare(password, user.password);
-    if (!match) return res.status(401).json({ error: "Contraseña incorrecta" });
-    const token = jwt.sign({ id: user.id, usuario: user.usuario, rol: user.rol }, JWT_SECRET, { expiresIn: '8h' });
-    res.json({ token, user: { id: user.id, nombre: user.nombre, usuario: user.usuario, rol: user.rol } });
-  } catch (err) {
-    console.error('Admin Login Error:', err.message);
-    res.status(500).json({ error: "Error en el servidor durante el login" });
-  }
-});
-
-// A partir de aquí, todas las rutas /api/admin requieren autenticación
-app.use('/api/admin', adminAuthMiddleware);
 
 // POST /api/clientes/registro
 app.post("/api/clientes/registro", async (req, res) => {
