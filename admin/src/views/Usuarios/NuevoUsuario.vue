@@ -152,11 +152,7 @@ const guardarUsuario = async () => {
 
   guardando.value = true
   try {
-    const isEdit = modoEdicion.value
-    const url = isEdit ? `${API}/${route.params.id}` : API
-    const method = isEdit ? 'PUT' : 'POST'
-
-    const body: Record<string, string> = {
+    const body: Record<string, any> = {
       nombre: formulario.value.nombre,
       correo: formulario.value.correo,
       usuario: formulario.value.usuario,

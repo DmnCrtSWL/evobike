@@ -8,7 +8,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   const isAuthenticated = computed(() => !!token.value)
 
-  async function login(correo, password) {
+  async function login(correo: string, password: string) {
     try {
       const res = await fetch(`${API_URL}/api/admin/login`, {
         method: 'POST',
