@@ -1,17 +1,34 @@
 <template>
   <AdminLayout>
     <div>
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
-        <h2 class="text-xl font-bold text-gray-800 dark:text-white/90">Productos</h2>
-        <router-link
-          to="/admin/productos/nuevo"
-          class="inline-flex items-center gap-2 rounded-lg bg-brand-500 px-5 py-2.5 text-sm font-medium text-white shadow-theme-xs hover:bg-brand-600 transition"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-          </svg>
-          Agregar Producto
-        </router-link>
+      <div class="flex flex-col gap-5 mb-6">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h2 class="text-xl font-bold text-gray-800 dark:text-white/90">Productos</h2>
+          <router-link
+            to="/admin/productos/nuevo"
+            class="inline-flex items-center gap-2 rounded-lg bg-brand-500 px-5 py-2.5 text-sm font-medium text-white shadow-theme-xs hover:bg-brand-600 transition"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Agregar Producto
+          </router-link>
+        </div>
+
+        <!-- Barra de Búsqueda -->
+        <div class="relative max-w-md w-full">
+          <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-gray-400">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </span>
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Buscar por nombre de producto..."
+            class="block w-full pl-10 pr-4 py-2.5 text-sm text-gray-900 bg-white border border-gray-300 rounded-xl focus:ring-brand-500 focus:border-brand-500 dark:bg-gray-800/50 dark:border-gray-700 dark:placeholder-gray-400 dark:text-white dark:focus:ring-brand-500 dark:focus:border-brand-500 outline-none transition-all"
+          />
+        </div>
       </div>
 
       <!-- Loading / Error -->
@@ -145,7 +162,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import AdminLayout from '../../components/layout/AdminLayout.vue'
 import { fetchWithAuth, CLIENT_URL } from '../../services/api'
 const limit = 10
@@ -165,6 +182,7 @@ interface Producto {
 const productos = ref<Producto[]>([])
 const total = ref(0)
 const currentPage = ref(1)
+const searchQuery = ref('')
 const loading = ref(true)
 const error = ref('')
 
@@ -174,7 +192,7 @@ const fetchProductos = async (page = 1) => {
   loading.value = true
   error.value = ''
   try {
-    const res = await fetchWithAuth(`/api/admin/productos?page=${page}&limit=${limit}`)
+    const res = await fetchWithAuth(`/api/admin/productos?page=${page}&limit=${limit}&search=${searchQuery.value}`)
     if (!res.ok) throw new Error(`Error ${res.status}`)
     const json = await res.json()
     productos.value = json.data
@@ -202,6 +220,14 @@ const eliminarProducto = async (id: number) => {
     alert('No se pudo eliminar el producto')
   }
 }
+
+let debounceTimeout: ReturnType<typeof setTimeout>
+watch(searchQuery, () => {
+  clearTimeout(debounceTimeout)
+  debounceTimeout = setTimeout(() => {
+    fetchProductos(1)
+  }, 500)
+})
 
 onMounted(() => fetchProductos(1))
 </script>

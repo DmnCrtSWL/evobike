@@ -557,22 +557,35 @@ const uploadToCloudinary = (buffer, folder = 'evobike/productos') =>
 app.get('/api/admin/productos', async (req, res) => {
   const page  = Math.max(1, parseInt(req.query.page)  || 1);
   const limit = Math.max(1, parseInt(req.query.limit) || 10);
+  const search = req.query.search || '';
   const offset = (page - 1) * limit;
+
   try {
+    let countQuery = `SELECT COUNT(*) AS total FROM productos WHERE deleted_at IS NULL`;
+    let dataQuery = `
+      SELECT p.id, p.nombre, p.precio, p.descuento_porcentaje, p.stock,
+              p.categoria, p.publicado, p.foto_principal,
+              TO_CHAR(p.created_at, 'DD/MM/YYYY') AS created_at,
+              u.usuario AS autor
+      FROM productos p
+      LEFT JOIN admin_usuarios u ON u.id = p.admin_usuario_id
+      WHERE p.deleted_at IS NULL
+    `;
+    const params = [];
+    const dataParams = [];
+
+    if (search) {
+      params.push(`%${search}%`);
+      countQuery += ` AND nombre ILIKE $1`;
+      dataQuery += ` AND p.nombre ILIKE $1`;
+    }
+
+    dataQuery += ` ORDER BY p.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+    dataParams.push(...params, limit, offset);
+
     const [{ rows: [{ total }] }, { rows: productos }] = await Promise.all([
-      db.query(`SELECT COUNT(*) AS total FROM productos WHERE deleted_at IS NULL`),
-      db.query(
-        `SELECT p.id, p.nombre, p.precio, p.descuento_porcentaje, p.stock,
-                p.categoria, p.publicado, p.foto_principal,
-                TO_CHAR(p.created_at, 'DD/MM/YYYY') AS created_at,
-                u.usuario AS autor
-         FROM productos p
-         LEFT JOIN admin_usuarios u ON u.id = p.admin_usuario_id
-         WHERE p.deleted_at IS NULL
-         ORDER BY p.created_at DESC
-         LIMIT $1 OFFSET $2`,
-        [limit, offset]
-      )
+      db.query(countQuery, params),
+      db.query(dataQuery, dataParams)
     ]);
     res.json({ data: productos, total: parseInt(total), page, limit });
   } catch (err) {
