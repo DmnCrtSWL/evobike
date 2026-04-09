@@ -96,8 +96,19 @@ const sendMessage = async () => {
   }
 }
 
+const formatMessage = (text) => {
+  if (!text) return ''
+  // Escapar HTML básico para prevenir vulnerabilidades
+  let safeText = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  // Expresión regular para encontrar URLs
+  const urlRegex = /(https?:\/\/[^\s<]+)/g;
+  return safeText.replace(urlRegex, (url) => {
+    // Retornar un enlace HTML. word-break y overflow-wrap aseguran que la URL se corte si es muy larga.
+    return `<a href="${url}" target="_blank" rel="noopener noreferrer" style="text-decoration: underline; word-break: break-all;">${url}</a>`
+  });
+}
+
 const clearHistory = () => {
-  // Nueva sesión al limpiar el historial
   sessionId.value = generateSessionId()
   localStorage.setItem('evobike_session_id', sessionId.value)
   localStorage.removeItem('evobike_chat_history')
@@ -143,7 +154,7 @@ const clearHistory = () => {
         <div class="messages-container" ref="chatContainer">
           <div v-for="(msg, index) in messages" :key="index" :class="['message-wrapper', msg.role]">
             <div class="message-bubble">
-              <p>{{ msg.content }}</p>
+              <p style="margin: 0;" v-html="formatMessage(msg.content)"></p>
             </div>
           </div>
           <div v-if="isLoading" class="message-wrapper bot">
@@ -333,6 +344,9 @@ const clearHistory = () => {
   font-size: 0.9rem;
   line-height: 1.4;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
 }
 
 .user .message-bubble {
