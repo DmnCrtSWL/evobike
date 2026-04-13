@@ -210,8 +210,8 @@ app.get("/api/products/:id", async (req, res) => {
     const { rows: colores } = await db.query(`SELECT * FROM productos_colores WHERE producto_id = $1`, [p.id]);
     
     const mappedProduct = mapProductForClient(p);
-    mappedProduct.description = p.descripcion ? p.descripcion.replace(/(<([^>]+)>)/gi, "") : 'Sin descripción';
-    mappedProduct.shortDescription = p.descripcion ? p.descripcion.substring(0, 100) + '...' : '';
+    mappedProduct.description = p.descripcion || 'Sin descripción';
+    mappedProduct.shortDescription = p.descripcion ? p.descripcion.substring(0, 160) + '...' : '';
     
     // Preparar imágenes de galería (galeria general + foto de cada color + principal)
     let images = [];

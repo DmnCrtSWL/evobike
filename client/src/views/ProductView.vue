@@ -168,6 +168,15 @@ const handleAddToCart = () => {
     cart.addToCart(productToAdd)
   }
 }
+
+const formatDescription = (text) => {
+  if (!text) return ''
+  // Reemplazar saltos de línea por <br> si no parece ser HTML
+  if (!text.includes('<p>') && !text.includes('<br')) {
+    return text.replace(/\n/g, '<br>')
+  }
+  return text
+}
 </script>
 
 <template>
@@ -361,7 +370,18 @@ const handleAddToCart = () => {
 
         </div>
       </div>
-      <!-- Sección Recomendados (ocupa todo el ancho de vuelta afuera de product-view) -->
+
+      <!-- Sección: Descripción Detallada -->
+      <div class="product-description-container" v-if="product.description">
+        <div class="description-header">
+          <h2>Descripción</h2>
+          <div class="divider"></div>
+        </div>
+        <div class="description-content" v-html="formatDescription(product.description)">
+        </div>
+      </div>
+
+      <!-- Sección Recomendados -->
       <ProductGrid 
         v-if="recommendedProducts.length > 0"
         title="Recomendados" 
@@ -853,8 +873,65 @@ const handleAddToCart = () => {
 }
 
 /* ── TABS/DESCRIPCION ABAJO ── */
-/* Estas clases ya no se usan porque quitamos la descripcion de abajo, pero se pueden mantener por limpieza 
-   o eliminarse. Vamos a borrarlas para que no haya código basura. */
+.product-description-container {
+  margin-top: 2rem;
+  margin-bottom: 6rem;
+  padding: 4rem;
+  background-color: #f9fafb;
+  border-radius: 24px;
+  border: 1px solid #f3f4f6;
+}
+
+.description-header {
+  margin-bottom: 2.5rem;
+}
+
+.description-header h2 {
+  font-family: 'Poppins', sans-serif;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 1rem;
+}
+
+.description-header .divider {
+  width: 60px;
+  height: 4px;
+  background-color: var(--color-brand, #0a6837);
+  border-radius: 2px;
+}
+
+.description-content {
+  font-family: 'Inter', sans-serif;
+  font-size: 1.15rem;
+  line-height: 1.8;
+  color: #374151;
+  max-width: 900px;
+}
+
+.description-content :deep(p) {
+  margin-bottom: 1.5rem;
+}
+
+.description-content :deep(strong) {
+  color: #111827;
+  font-weight: 700;
+}
+
+@media (max-width: 768px) {
+  .product-description-container {
+    padding: 2rem;
+    border-radius: 16px;
+  }
+  
+  .description-header h2 {
+    font-size: 1.5rem;
+  }
+  
+  .description-content {
+    font-size: 1rem;
+  }
+}
 
 /* ── ESTADOS VACIOS Y SKELETONS ── */
 .empty-state {
