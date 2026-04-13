@@ -198,7 +198,7 @@ const formatDescription = (text) => {
         <div class="product-gallery-container">
           <!-- Imagen Principal -->
           <div class="main-image-box">
-            <img v-if="mainImage" :src="mainImage" :alt="product.name" class="main-img" />
+            <img v-if="mainImage" :src="mainImage" :alt="product.name" class="main-img" referrerpolicy="no-referrer" />
             <div v-else class="placeholder-img">
               <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
             </div>
@@ -213,7 +213,7 @@ const formatDescription = (text) => {
               :class="{ 'active': mainImage === img.src }"
               @click="mainImage = img.src"
             >
-              <img :src="img.src" :alt="img.alt || product.name" />
+              <img :src="img.src" :alt="img.alt || product.name" referrerpolicy="no-referrer" />
             </button>
           </div>
         </div>
@@ -1027,11 +1027,24 @@ const formatDescription = (text) => {
     position: relative;
     top: 0;
     z-index: 1;
+    margin-bottom: 1rem;
   }
   
   .main-image-box {
     height: auto;
+    min-height: 350px;
     aspect-ratio: 1 / 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .main-img {
+    height: auto;
+    max-height: 100%;
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
   }
 }
 
@@ -1068,13 +1081,21 @@ const formatDescription = (text) => {
     padding: 1rem;
   }
 
+  .main-image-box {
+    min-height: 300px;
+  }
+
   .thumb-btn {
-    width: 60px;
-    height: 60px;
+    width: 64px;
+    height: 64px;
+    padding: 2px;
   }
 
   .thumbnail-list {
-    display: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
   }
 }
 </style>

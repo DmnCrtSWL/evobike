@@ -215,11 +215,36 @@ app.get("/api/products/:id", async (req, res) => {
     
     // Preparar imágenes de galería (galeria general + foto de cada color + principal)
     let images = [];
-    if (p.foto_principal) images.push({ id: 'main', src: p.foto_principal, alt: p.nombre });
-    if (p.galeria && Array.isArray(p.galeria)) {
-      p.galeria.forEach((g, i) => images.push({ id: `gal_${i}`, src: g, alt: 'Extra' }));
+    if (p.foto_principal) {
+      images.push({ id: 'main', src: p.foto_principal, alt: p.nombre });
     }
-    colores.forEach(c => { if(c.foto) images.push({ id: `col_${c.id}`, src: c.foto, alt: c.nombre }); });
+    
+    // Asegurarnos de que galeria sea un array
+    let galeriaArr = [];
+    if (p.galeria) {
+      if (Array.isArray(p.galeria)) {
+        galeriaArr = p.galeria;
+      } else if (typeof p.galeria === 'string') {
+        try {
+          galeriaArr = JSON.parse(p.galeria);
+        } catch (e) {
+          console.error("Error parsing galeria string:", e);
+        }
+      }
+    }
+
+    if (Array.isArray(galeriaArr)) {
+      galeriaArr.forEach((g, i) => {
+        if (g) images.push({ id: `gal_${i}`, src: g, alt: 'Extra' });
+      });
+    }
+
+    if (Array.isArray(colores)) {
+      colores.forEach(c => { 
+        if(c.foto) images.push({ id: `col_${c.id}`, src: c.foto, alt: c.nombre }); 
+      });
+    }
+
     mappedProduct.images = images;
     
     // Preparar Atributos (opciones elegibles)
