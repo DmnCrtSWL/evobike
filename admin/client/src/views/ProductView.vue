@@ -841,8 +841,8 @@ const handleAddToCart = () => {
 }
 
 .feature-text.strong {
-  color: #111827;
-  font-size: 0.95rem;
+  color: black !import;
+  font-weight: bold !important;
 }
 
 .feature-text p {
