@@ -169,6 +169,29 @@ const handleAddToCart = () => {
   }
 }
 
+const productInfographics = computed(() => {
+  if (!product.value || !product.value.name) return []
+  const name = product.value.name.toLowerCase().replace(/\s+/g, '')
+  
+  if (name.includes('urbex')) return ['/urbex.jpeg']
+  if (name.includes('evotank')) return ['/evotank.jpeg']
+  if (name.includes('cargo')) return ['/cargo.jpeg']
+  
+  if (name.includes('familyq+') || name.includes('familyqplus')) {
+    return ['/family-q-plus.jpeg', '/family-q-plus-2.jpeg']
+  }
+  
+  if (name.includes('golf+') || name.includes('golfplus')) {
+    return ['/golf-plus.jpeg', '/golf-plus-2.jpeg']
+  }
+  
+  if (name.includes('golf')) {
+    return ['/golf.jpeg', '/golf-dos.jpeg']
+  }
+  
+  return []
+})
+
 const formatDescription = (text) => {
   if (!text) return ''
   // Reemplazar saltos de línea por <br> si no parece ser HTML
@@ -371,8 +394,17 @@ const formatDescription = (text) => {
         </div>
       </div>
 
-      <!-- Sección: Descripción Detallada -->
-      <div class="product-description-container" v-if="product.description">
+      <!-- Sección: Información del Producto (Infografías / Descripción Detallada) -->
+      <div class="product-description-container" v-if="productInfographics.length > 0">
+        <div class="description-header">
+          <h2>Información del Producto</h2>
+          <div class="divider"></div>
+        </div>
+        <div class="infographics-content">
+          <img v-for="img in productInfographics" :key="img" :src="img" :alt="'Información de ' + product.name" class="infographic-img" />
+        </div>
+      </div>
+      <div class="product-description-container" v-else-if="product.description">
         <div class="description-header">
           <h2>Descripción</h2>
           <div class="divider"></div>
@@ -916,6 +948,21 @@ const formatDescription = (text) => {
 .description-content :deep(strong) {
   color: #111827;
   font-weight: 700;
+}
+
+.infographics-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem; /* Espacio entre múltiples imágenes */
+  width: 100%;
+}
+
+.infographic-img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 @media (max-width: 768px) {
