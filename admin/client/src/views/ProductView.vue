@@ -1000,4 +1000,9 @@ const handleAddToCart = () => {
     display: none;
   }
 }
+
+.feature-text strong {
+    color: black !important;
+    font-weight: 900 !important;
+}
 </style>
