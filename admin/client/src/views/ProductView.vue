@@ -840,7 +840,7 @@ const handleAddToCart = () => {
   font-family: 'Inter', sans-serif;
 }
 
-.feature-text.strong {
+.feature-text strong {
   color: black !import;
   font-weight: bold !important;
 }
