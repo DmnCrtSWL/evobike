@@ -107,6 +107,7 @@ const mapProductForClient = (p) => {
     imageOriginal: p.foto_principal,
     badge: p.descuento_porcentaje > 0 ? "Oferta" : "",
     categories: p.categoria ? [{ id: p.categoria, name: p.categoria }] : [],
+    stock: p.stock,
     attributes: []
   };
 };

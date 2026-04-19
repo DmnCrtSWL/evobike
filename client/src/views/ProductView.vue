@@ -221,6 +221,7 @@ const formatDescription = (text) => {
         <div class="product-gallery-container">
           <!-- Imagen Principal -->
           <div class="main-image-box">
+            <div v-if="product.stock <= 0" class="product-badge out-of-stock">Agotado</div>
             <img v-if="mainImage" :src="mainImage" :alt="product.name" class="main-img" referrerpolicy="no-referrer" />
             <div v-else class="placeholder-img">
               <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
@@ -292,8 +293,13 @@ const formatDescription = (text) => {
               <button class="qty-btn" @click="increaseQty" aria-label="Aumentar">+</button>
             </div>
             
-            <button class="add-to-cart-btn" @click="handleAddToCart">
-              <span>Agregar al Carrito</span>
+            <button 
+              class="add-to-cart-btn" 
+              :class="{ 'btn-disabled': product.stock <= 0 }"
+              :disabled="product.stock <= 0"
+              @click="handleAddToCart"
+            >
+              <span>{{ product.stock <= 0 ? 'Agotado Temporalmente' : 'Agregar al Carrito' }}</span>
             </button>
           </div>
           
@@ -307,7 +313,9 @@ const formatDescription = (text) => {
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
               </div>
               <div class="info-content">
-                <strong>Disponible para envío</strong>
+                <strong :class="{ 'text-danger': product.stock <= 0 }">
+                  {{ product.stock <= 0 ? 'Agotado temporalmente' : 'Disponible para envío' }}
+                </strong>
               </div>
             </div>
 
@@ -524,6 +532,25 @@ const formatDescription = (text) => {
   border-color: var(--color-brand, #0a6837);
 }
 
+.product-badge {
+  position: absolute;
+  top: 1.5rem;
+  left: 1.5rem;
+  background-color: var(--color-brand, #0a6837);
+  color: white;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 0.4rem 1rem;
+  border-radius: 6px;
+  letter-spacing: 0.05em;
+  z-index: 5;
+}
+
+.product-badge.out-of-stock {
+  background-color: #dc2626;
+}
+
 /* ── COLUMNA DERECHA (Detalles) ── */
 .product-details {
   display: flex;
@@ -738,6 +765,17 @@ const formatDescription = (text) => {
 .add-to-cart-btn:hover {
   background-color: var(--color-brand-dark, #028016);
   transform: translateY(-2px);
+}
+
+.add-to-cart-btn.btn-disabled {
+  background-color: #f3f4f6 !important;
+  color: #9ca3af !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+}
+
+.text-danger {
+  color: #dc2626;
 }
 
 .add-to-cart-btn:active {

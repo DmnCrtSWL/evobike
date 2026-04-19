@@ -38,6 +38,21 @@ import { RouterLink } from 'vue-router'
       </div>
     </div>
 
+    <!-- ── Sucursales (Ancho completo) ── -->
+    <div class="footer-sucursales">
+      <h4 class="footer-title">Sucursales</h4>
+      <div class="sucursales-grid">
+        <div class="sucursal-item">
+          <span class="sucursal-city">Papantla, Ver:</span>
+          <span class="sucursal-address">Portal Ocampo #9</span>
+        </div>
+        <div class="sucursal-item">
+          <span class="sucursal-city">Los Reyes, Mich.</span>
+          <span class="sucursal-address">Calle Juan Enriquez #205</span>
+        </div>
+      </div>
+    </div>
+
     <!-- ── Footer Bottom (Centrado) ── -->
     <div class="footer-bottom">
       <div class="container bottom-content">
@@ -218,6 +233,38 @@ import { RouterLink } from 'vue-router'
   color: var(--color-brand, #0a6837);
 }
 
+/* ── Sucursales (Full Width) ── */
+.footer-sucursales {
+  width: 100%;
+  padding: 3rem 1rem;
+  background-color: #f9fafb; /* Fondo ligeramente gris para diferenciar */
+  border-bottom: 1px solid #ebebeb;
+  text-align: center;
+}
+
+.sucursales-grid {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 4rem;
+  margin-top: 1rem;
+}
+
+.sucursal-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.sucursal-city {
+  font-weight: 700;
+  color: #111827;
+}
+
+.sucursal-address {
+  color: #4b5563;
+}
+
 /* ── Responsive ── */
 @media (max-width: 768px) {
   .footer-grid {
@@ -228,6 +275,11 @@ import { RouterLink } from 'vue-router'
   
   .footer-top {
     padding: 3rem 0 2rem 0;
+  }
+
+  .sucursales-grid {
+    flex-direction: column;
+    gap: 2rem;
   }
 }
 </style>

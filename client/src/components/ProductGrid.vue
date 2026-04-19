@@ -26,7 +26,7 @@ const cart = useCartStore()
           <h2 class="subtitle">{{ subtitle }}</h2>
           <h3 class="title">{{ title }}</h3>
         </div>
-        <RouterLink v-if="viewAllLink" :to="viewAllLink" class="view-all">Ver todo <span class="arrow">&rarr;</span></RouterLink>
+        <a v-if="viewAllLink" :href="viewAllLink" class="view-all">Ver todo <span class="arrow">&rarr;</span></a>
       </div>
 
       <!-- Skeleton Loading State -->
@@ -51,7 +51,8 @@ const cart = useCartStore()
               <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
             </div>
             
-            <div v-if="product.badge" class="product-badge">{{ product.badge }}</div>
+            <div v-if="product.stock <= 0" class="product-badge out-of-stock">Agotado</div>
+            <div v-else-if="product.badge" class="product-badge">{{ product.badge }}</div>
           </RouterLink>
           
           <div class="product-info">
@@ -68,13 +69,20 @@ const cart = useCartStore()
                 {{ product.priceFormatted || product.price }}
               </span>
             </div>
-            <button class="add-to-cart-btn" @click="cart.addToCart(product)">Agregar al Carrito</button>
+            <button 
+              class="add-to-cart-btn" 
+              :class="{ 'btn-disabled': product.stock <= 0 }"
+              :disabled="product.stock <= 0"
+              @click="cart.addToCart(product)"
+            >
+              {{ product.stock <= 0 ? 'Agotado' : 'Agregar al Carrito' }}
+            </button>
           </div>
         </div>
       </div>
       
       <div v-if="viewAllLink" class="view-all-wrapper">
-        <RouterLink :to="viewAllLink" class="view-all-btn">Ver todos los productos</RouterLink>
+        <a :href="viewAllLink" class="view-all-btn">Ver todos los productos</a>
       </div>
     </div>
   </section>
@@ -137,6 +145,9 @@ const cart = useCartStore()
   gap: 0.25rem;
   transition: color 0.2s ease;
   padding-bottom: 0.25rem;
+  position: relative;
+  z-index: 10;
+  cursor: pointer;
 }
 
 .view-all:hover {
@@ -220,6 +231,10 @@ const cart = useCartStore()
   letter-spacing: 0.05em;
 }
 
+.product-badge.out-of-stock {
+  background-color: #dc2626; /* Red for out of stock */
+}
+
 .product-info {
   padding: 1.5rem;
   display: flex;
@@ -274,10 +289,17 @@ const cart = useCartStore()
 }
 
 @media (hover: hover) {
-  .product-card:hover .add-to-cart-btn {
+  .product-card:not(.is-out-of-stock):hover .add-to-cart-btn {
     background-color: var(--color-brand, #0a6837);
     color: #ffffff;
   }
+}
+
+.btn-disabled {
+  background-color: #f3f4f6 !important;
+  color: #9ca3af !important;
+  cursor: not-allowed !important;
+  transform: none !important;
 }
 
 /* ── Skeleton Loading ── */

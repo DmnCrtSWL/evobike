@@ -15,6 +15,11 @@ const loading = ref(true)
 // Filtros seleccionados
 const selectedCategory = ref('')
 const selectedColor = ref('')
+const isFiltersOpen = ref(false) // Estado inicial retraído
+
+const toggleFilters = () => {
+  isFiltersOpen.value = !isFiltersOpen.value
+}
 
 const loadData = async () => {
   loading.value = true
@@ -75,6 +80,7 @@ function goToPage(page) {
 watch([selectedCategory, selectedColor], () => {
   currentPage.value = 1
   loadData()
+  isFiltersOpen.value = false // Se vuelve a cerrar al seleccionar uno
 })
 
 </script>
@@ -89,45 +95,66 @@ watch([selectedCategory, selectedColor], () => {
       </div>
     </header>
 
-    <div class="container shop-layout">
-      <!-- Sidebar de Filtros -->
-      <aside class="shop-sidebar">
-        <div class="filter-group">
-          <h3>Categorías</h3>
-          <ul class="filter-list">
-            <li>
-              <label>
-                <input type="radio" v-model="selectedCategory" value="" />
-                Todas las categorías
-              </label>
-            </li>
-            <li v-for="cat in categories" :key="cat.id">
-              <label>
-                <input type="radio" v-model="selectedCategory" :value="cat.id" />
-                {{ cat.name }} ({{ cat.count }})
-              </label>
-            </li>
-          </ul>
-        </div>
+    <div class="container">
+      <!-- Botón de Toggle para Filtros -->
+      <div class="filters-toggle-wrapper">
+        <button @click="toggleFilters" class="filters-toggle-btn" :class="{ 'active': isFiltersOpen }">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="4" y1="21" x2="4" y2="14"></line>
+            <line x1="4" y1="10" x2="4" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12" y2="3"></line>
+            <line x1="20" y1="21" x2="20" y2="16"></line>
+            <line x1="20" y1="12" x2="20" y2="3"></line>
+            <line x1="1" y1="14" x2="7" y2="14"></line>
+            <line x1="9" y1="8" x2="15" y2="8"></line>
+            <line x1="17" y1="16" x2="23" y2="16"></line>
+          </svg>
+          {{ isFiltersOpen ? 'Ocultar Filtros' : 'Mostrar Categorías y Filtros' }}
+        </button>
+      </div>
 
-        <div class="filter-group" v-if="colors.length > 0">
-          <h3>Color</h3>
-          <ul class="filter-list">
-            <li>
-              <label>
-                <input type="radio" v-model="selectedColor" value="" />
-                Todos los colores
-              </label>
-            </li>
-            <li v-for="color in colors" :key="color.id">
-              <label>
-                <input type="radio" v-model="selectedColor" :value="color.term_id" />
-                {{ color.name }}
-              </label>
-            </li>
-          </ul>
-        </div>
-      </aside>
+      <div class="shop-layout">
+        <!-- Sidebar de Filtros (Retráctil) -->
+        <transition name="expand">
+          <aside v-if="isFiltersOpen" class="shop-sidebar">
+            <div class="filter-group">
+              <h3>Categorías</h3>
+              <ul class="filter-list">
+                <li>
+                  <label>
+                    <input type="radio" v-model="selectedCategory" value="" />
+                    Todas las categorías
+                  </label>
+                </li>
+                <li v-for="cat in categories" :key="cat.id">
+                  <label>
+                    <input type="radio" v-model="selectedCategory" :value="cat.id" />
+                    {{ cat.name }} ({{ cat.count }})
+                  </label>
+                </li>
+              </ul>
+            </div>
+
+            <div class="filter-group" v-if="colors.length > 0">
+              <h3>Color</h3>
+              <ul class="filter-list">
+                <li>
+                  <label>
+                    <input type="radio" v-model="selectedColor" value="" />
+                    Todos los colores
+                  </label>
+                </li>
+                <li v-for="color in colors" :key="color.id">
+                  <label>
+                    <input type="radio" v-model="selectedColor" :value="color.term_id" />
+                    {{ color.name }}
+                  </label>
+                </li>
+              </ul>
+            </div>
+          </aside>
+        </transition>
 
       <!-- Grid de Productos -->
       <main class="shop-content">
@@ -204,6 +231,7 @@ watch([selectedCategory, selectedColor], () => {
       </main>
     </div>
   </div>
+</div>
 </template>
 
 <style scoped>
@@ -246,7 +274,41 @@ watch([selectedCategory, selectedColor], () => {
   align-items: flex-start;
 }
 
-/* Sidebar */
+/* Sidebar Retráctil */
+.filters-toggle-wrapper {
+  margin-bottom: 2rem;
+  display: flex;
+  justify-content: center;
+}
+
+.filters-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background-color: white;
+  border: 1px solid #ebebeb;
+  padding: 0.85rem 2rem;
+  border-radius: 50px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.filters-toggle-btn:hover {
+  border-color: var(--color-brand, #0a6837);
+  color: var(--color-brand, #0a6837);
+  box-shadow: 0 4px 12px rgba(10, 104, 55, 0.1);
+}
+
+.filters-toggle-btn.active {
+  background-color: var(--color-brand, #0a6837);
+  color: white;
+  border-color: var(--color-brand, #0a6837);
+}
+
 .shop-sidebar {
   width: 250px;
   flex-shrink: 0;
@@ -254,6 +316,24 @@ watch([selectedCategory, selectedColor], () => {
   padding: 1.5rem;
   border-radius: 12px;
   border: 1px solid #ebebeb;
+  overflow: hidden;
+}
+
+/* Animación de expansión */
+.expand-enter-active,
+.expand-leave-active {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  max-width: 300px;
+  opacity: 1;
+}
+
+.expand-enter-from,
+.expand-leave-to {
+  max-width: 0;
+  opacity: 0;
+  padding: 0;
+  margin: 0;
+  border-width: 0;
 }
 
 .filter-group {

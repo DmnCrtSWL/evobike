@@ -1,7 +1,8 @@
 <script setup>
 import { RouterLink, useRouter } from 'vue-router'
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { fetchAllProducts, fetchCategories } from '@/services/api'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -13,62 +14,37 @@ function handleLogout() {
   router.push('/')
 }
 
-const menuItems = [
-  {
-    label: 'Bicicletas Eléctricas',
-    children: [
-      { label: 'Aguila Pro', to: '/producto/5731' },
-      { label: 'Aurora', to: '/producto/5727' },
-      { label: 'Galaxy Plus', to: '/producto/5732' },
-      { label: 'Jaguar', to: '/producto/5729' },
-      { label: 'Moped', to: '/producto/5734' },
-      { label: 'Rayo Pro', to: '/producto/5733' },
-      { label: 'Sol', to: '/producto/5730' },
-      { label: 'Tigre', to: '/producto/5728' },
-    ]
-  },
-  {
-    label: 'Bicimotos',
-    children: [
-      { label: 'Polar', to: '/producto/5735' },
-      { label: 'Urbex', to: '/producto/5737' },
-      { label: 'Zeus', to: '/producto/5736' },
-    ]
-  },
-  {
-    label: 'Triciclos',
-    children: [
-      { label: 'Beetle', to: '/producto/5746' },
-      { label: 'Family Q', to: '/producto/5744' },
-      { label: 'Family Q Plus', to: '/producto/5745' },
-      { label: 'Golf', to: '/producto/5747' },
-      { label: 'Golf Plus', to: '/producto/5748' },
-    ]
-  },
-  {
-    label: 'Scooters',
-    children: [
-      { label: 'M1', to: '/producto/5741' },
-      { label: 'M4', to: '/producto/5742' },
-      { label: 'M5', to: '/producto/5743' },
-    ]
-  },
-  {
-    label: 'Carga',
-    children: [
-      { label: 'Cargo', to: '/producto/5739' },
-      { label: 'Evotank 160 cm', to: '/producto/5738' },
-    ]
-  },
-  {
-    label: 'Para Niños',
-    children: [
-      { label: 'Ricochet', to: '/producto/5749' },
-      { label: 'Python', to: '/producto/5750' },
-      { label: 'Evokid', to: '/producto/5751' },
-    ]
-  },
-]
+const menuItems = ref([])
+
+async function loadMenu() {
+  try {
+    const [categories, products] = await Promise.all([
+      fetchCategories(),
+      fetchAllProducts()
+    ])
+
+    // Agrupamos productos por categoría
+    const menu = categories.map(cat => {
+      return {
+        label: cat.name.charAt(0).toUpperCase() + cat.name.slice(1).toLowerCase(),
+        children: products
+          .filter(p => p.categories && p.categories.some(c => c.name === cat.name))
+          .map(p => ({
+            label: p.name,
+            to: `/producto/${p.id}`
+          }))
+      }
+    }).filter(item => item.children.length > 0) // Solo mostrar categorías con productos
+
+    menuItems.value = menu
+  } catch (err) {
+    console.error('Error loading menu:', err)
+  }
+}
+
+onMounted(() => {
+  loadMenu()
+})
 
 // Desktop hover dropdown
 const openMenu = ref(null)
@@ -122,7 +98,7 @@ function closeMobileMenu() {
       <div class="main-nav-bar container">
         <!-- Logo -->
         <div class="logo">
-          <RouterLink to="/" @click="closeMobileMenu">
+          <RouterLink to="/" @click="closeMobileMenu" class="logo-link">
             <img src="/logo.png" alt="Evobike Logo" class="logo-img" />
           </RouterLink>
         </div>
@@ -318,8 +294,8 @@ function closeMobileMenu() {
 }
 
 /* Logo */
-.logo { display: flex; align-items: center; flex-shrink: 0; }
-.logo a { display: flex; align-items: center; text-decoration: none; }
+.logo { display: flex; align-items: center; flex-shrink: 0; position: relative; z-index: 10; }
+.logo-link { display: flex; align-items: center; text-decoration: none; cursor: pointer; }
 .logo-img { height: 48px; width: auto; display: block; transition: opacity 0.2s; }
 .logo-img:hover { opacity: 0.85; }
 
